@@ -1,4 +1,5 @@
 
+
 // Types reflecting the Database Schema defined in the architecture
 
 export type User = {
@@ -65,6 +66,9 @@ export type Recipe = {
   prep_time: number;
   cook_time: number;
   servings: number;
+  calories: number; // New
+  cuisine: string;  // New
+  tags: string[];   // New (Dietary tags: "Vegetarian", "Gluten Free")
   ingredients: RecipeIngredient[];
   author: User;
 };
@@ -114,7 +118,6 @@ export type Activity = {
 };
 
 // --- Mock Data: Food Ontology ---
-// Structure: Root -> Category -> Subcategory -> Generic Food -> Specific/Brand
 export const FOOD_ONTOLOGY: FoodNode[] = [
   // Roots
   { id: 1, name: "Food", path: "/1/", parent_id: null, type: "category", description: "The root of all edible items." },
@@ -131,7 +134,7 @@ export const FOOD_ONTOLOGY: FoodNode[] = [
     type: "category", 
     description: "Milk and products produced from milk.",
     storage: "Always keep refrigerated below 40°F (4°C).",
-    nutrition: { calories: 60, protein: "3g", fat: "3.2g", carbs: "4.5g" } // Generic avg
+    nutrition: { calories: 60, protein: "3g", fat: "3.2g", carbs: "4.5g" } 
   },
   { 
     id: 12, 
@@ -343,9 +346,12 @@ export const RECIPES: Recipe[] = [
     prep_time: 10,
     cook_time: 15,
     servings: 4,
+    calories: 650,
+    cuisine: "Italian",
+    tags: [],
     ingredients: [
       { food_node_id: 4, quantity: 3, unit: "large" }, // Eggs
-      { food_node_id: 14, quantity: 1, unit: "cup" },   // Cheddar (Substitute for Pecorino for this example)
+      { food_node_id: 14, quantity: 1, unit: "cup" },   // Cheddar
       { food_node_id: 27, quantity: 400, unit: "g" },   // Spaghetti
       { food_node_id: 32, quantity: 2, unit: "cloves" }, // Garlic
       { food_node_id: 9, quantity: 200, unit: "g" }   // Bacon
@@ -360,6 +366,9 @@ export const RECIPES: Recipe[] = [
     prep_time: 15,
     cook_time: 10,
     servings: 2,
+    calories: 320,
+    cuisine: "American",
+    tags: ["Healthy", "Gluten Free", "Low Carb"],
     ingredients: [
       { food_node_id: 11, quantity: 2, unit: "pieces" }, // Chicken Breast
       { food_node_id: 31, quantity: 1, unit: "medium" }, // Onion
@@ -375,6 +384,9 @@ export const RECIPES: Recipe[] = [
     prep_time: 10,
     cook_time: 15,
     servings: 4,
+    calories: 450,
+    cuisine: "American",
+    tags: ["Vegetarian", "Breakfast"],
     ingredients: [
       { food_node_id: 4, quantity: 2, unit: "large" }, // Eggs
       { food_node_id: 12, quantity: 1, unit: "cup" },   // Milk
@@ -397,7 +409,7 @@ export const INITIAL_PANTRY: PantryItem[] = [
   { id: 2, food_node_id: 12, quantity: 0.5, unit: "gallon", location: "fridge", expiration_date: "2023-11-20" }, // Milk
   { id: 3, food_node_id: 25, quantity: 1, unit: "kg", location: "pantry", expiration_date: null }, // Flour
   { id: 4, food_node_id: 32, quantity: 5, unit: "bulbs", location: "pantry", expiration_date: null }, // Garlic
-  { id: 5, food_node_id: 90, quantity: 1, unit: "pack", location: "fridge", expiration_date: null }, // Oscar Mayer Bacon (Specific Brand)
+  { id: 5, food_node_id: 90, quantity: 1, unit: "pack", location: "fridge", expiration_date: null }, // Oscar Mayer Bacon
 ];
 
 export const INITIAL_SHOPPING_LIST: ShoppingItem[] = [
@@ -413,7 +425,6 @@ export const INITIAL_MEAL_PLAN: MealPlanItem[] = [
   { id: 3, day: "Sunday", slot: "breakfast", recipe_id: 3, note: "Family brunch" },
 ];
 
-// --- Social Mock Data ---
 export const FRIENDS: Friend[] = [
   { ...USERS[1], status: 'connected', mutual_friends: 12 },
   { ...USERS[2], status: 'connected', mutual_friends: 5 },
@@ -437,7 +448,6 @@ export const ACTIVITIES: Activity[] = [
 // --- API Simulation Service ---
 
 export const api = {
-  // Food Ontology / Encyclopedia
   getFoodNodes: () => Promise.resolve(FOOD_ONTOLOGY),
   getFoodNode: (id: number) => Promise.resolve(FOOD_ONTOLOGY.find(n => n.id === id)),
   getFoodNodeChildren: (id: number) => Promise.resolve(FOOD_ONTOLOGY.filter(n => n.parent_id === id)),
@@ -456,18 +466,26 @@ export const api = {
     return Promise.resolve(parents);
   },
   
-  // Advanced Inventory Match Logic (Materialized Path)
+  // Weighted Search for Food Nodes
+  searchNodes: (query: string) => {
+    const q = query.toLowerCase();
+    const results = FOOD_ONTOLOGY.map(node => {
+      let score = 0;
+      if (node.name.toLowerCase() === q) score += 100; // Exact match
+      else if (node.name.toLowerCase().startsWith(q)) score += 50; // Starts with
+      else if (node.name.toLowerCase().includes(q)) score += 20; // Contains
+      if (node.description?.toLowerCase().includes(q)) score += 5;
+      return { node, score };
+    })
+    .filter(r => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(r => r.node);
+    return Promise.resolve(results);
+  },
+
   checkInventoryMatch: (requiredId: number, pantry: PantryItem[]) => {
     const requiredNode = FOOD_ONTOLOGY.find(n => n.id === requiredId);
     if (!requiredNode) return false;
-
-    // Check if we have an item in pantry that is equal to OR a child of the required item
-    // e.g. Recipe needs "Bacon" (Path /1/.../9/). Pantry has "Oscar Mayer Bacon" (Path /1/.../9/90/)
-    // The Pantry Item Path must START WITH the Required Item Path.
-    
-    // Reverse Check (Substitute): Recipe needs "Oscar Mayer". Pantry has "Bacon". (Usually not a match, but simplified here)
-    // We strictly check: Do I have this item OR a specific version of this item?
-    
     return pantry.some(item => {
       const pantryNode = FOOD_ONTOLOGY.find(n => n.id === item.food_node_id);
       if (!pantryNode) return false;
@@ -476,14 +494,57 @@ export const api = {
   },
 
   getRecipes: () => Promise.resolve(RECIPES),
+  
   getRecipe: (id: number) => Promise.resolve(RECIPES.find(r => r.id === id)),
+  
   addRecipe: (recipe: Omit<Recipe, 'id'>) => {
     const newRecipe = { ...recipe, id: Date.now() };
     RECIPES.push(newRecipe);
     return Promise.resolve(newRecipe);
   },
+
+  // Weighted Search for Recipes
+  searchRecipes: (query: string, filters: any = {}) => {
+    const q = query.toLowerCase();
+    
+    // Step 1: Filter by Criteria
+    let filtered = RECIPES.filter(r => {
+      if (filters.cuisine && r.cuisine !== filters.cuisine) return false;
+      if (filters.maxTime && (r.prep_time + r.cook_time) > filters.maxTime) return false;
+      if (filters.maxCalories && r.calories > filters.maxCalories) return false;
+      if (filters.dietary && filters.dietary.length > 0) {
+        // Must contain ALL selected dietary tags
+        const hasTags = filters.dietary.every((tag: string) => r.tags.includes(tag));
+        if (!hasTags) return false;
+      }
+      return true;
+    });
+
+    // Step 2: Weighted Text Search
+    if (!q) return Promise.resolve(filtered);
+
+    const scored = filtered.map(recipe => {
+      let score = 0;
+      if (recipe.title.toLowerCase().includes(q)) score += 10;
+      if (recipe.description.toLowerCase().includes(q)) score += 5;
+      if (recipe.cuisine.toLowerCase().includes(q)) score += 8;
+      
+      // Fuzzy Ingredient Match (Check food ontology names)
+      const ingredientMatch = recipe.ingredients.some(ing => {
+        const node = FOOD_ONTOLOGY.find(n => n.id === ing.food_node_id);
+        return node?.name.toLowerCase().includes(q);
+      });
+      if (ingredientMatch) score += 15; // High relevance if searching by ingredient
+
+      return { recipe, score };
+    })
+    .filter(r => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(r => r.recipe);
+
+    return Promise.resolve(scored);
+  },
   
-  // Reviews
   getRecipeReviews: (recipeId: number) => {
     return Promise.resolve(INITIAL_REVIEWS.filter(r => r.recipe_id === recipeId));
   },
@@ -493,7 +554,6 @@ export const api = {
     return Promise.resolve(newReview);
   },
 
-  // Pantry
   getPantry: () => {
     const data = localStorage.getItem('foodgenie_pantry');
     return Promise.resolve(data ? JSON.parse(data) : INITIAL_PANTRY);
@@ -514,7 +574,6 @@ export const api = {
     return Promise.resolve(true);
   },
 
-  // Shopping List
   getShoppingList: () => {
     const data = localStorage.getItem('foodgenie_shoppinglist');
     return Promise.resolve(data ? JSON.parse(data) : INITIAL_SHOPPING_LIST);
@@ -549,7 +608,6 @@ export const api = {
     return Promise.resolve(true);
   },
 
-  // Meal Plan
   getMealPlan: () => {
     const data = localStorage.getItem('foodgenie_mealplan');
     return Promise.resolve(data ? JSON.parse(data) : INITIAL_MEAL_PLAN);
@@ -571,7 +629,6 @@ export const api = {
     return Promise.resolve(true);
   },
 
-  // Social
   getFriends: () => Promise.resolve(FRIENDS),
   getActivities: () => Promise.resolve(ACTIVITIES),
   searchUsers: (query: string) => {
@@ -583,7 +640,6 @@ export const api = {
     return Promise.resolve(true);
   },
 
-  // User Profile
   getUserProfile: (id: number) => {
     const user = USERS.find(u => u.id === id) || USERS[0];
     return Promise.resolve(user);
@@ -594,5 +650,51 @@ export const api = {
       USERS[index] = { ...USERS[index], ...data };
     }
     return Promise.resolve(USERS[index]);
+  },
+
+  // --- AI/OCR Mock Services ---
+
+  // Mock Receipt Parsing
+  parseReceipt: (imageBlob: any) => {
+    // Simulating delay
+    return new Promise<ShoppingItem[]>((resolve) => {
+        setTimeout(() => {
+            // Mock detected items
+            resolve([
+                { id: 101, food_node_id: 12, name: "Whole Milk", quantity: 1, unit: "gallon", checked: false, category: "Dairy" },
+                { id: 102, food_node_id: 4, name: "Organic Eggs", quantity: 12, unit: "large", checked: false, category: "Dairy" },
+                { id: 103, food_node_id: 31, name: "Yellow Onions", quantity: 3, unit: "pcs", checked: false, category: "Produce" }
+            ]);
+        }, 2000);
+    });
+  },
+
+  // Mock Object Detection (for Video/Camera)
+  detectFoodObject: () => {
+    // Randomly return a food node from ontology to simulate detection
+    const randomIndex = Math.floor(Math.random() * FOOD_ONTOLOGY.length);
+    const node = FOOD_ONTOLOGY[randomIndex];
+    return Promise.resolve(node);
+  },
+
+  // Mock Recipe OCR
+  ocrRecipe: (imageBlob: any) => {
+    return new Promise<Partial<Recipe>>((resolve) => {
+        setTimeout(() => {
+            resolve({
+                title: "Scanned Grandma's Lasagna",
+                description: "Classic family recipe scanned from handwritten card.",
+                prep_time: 45,
+                cook_time: 60,
+                servings: 8,
+                ingredients: [
+                    { food_node_id: 27, quantity: 500, unit: 'g' }, // Pasta
+                    { food_node_id: 13, quantity: 2, unit: 'cups' }, // Cheese
+                    { food_node_id: 36, quantity: 4, unit: 'whole' } // Tomato
+                ],
+                tags: ["Family Secret", "Italian"]
+            });
+        }, 2500);
+    });
   }
 };

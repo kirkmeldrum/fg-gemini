@@ -1,6 +1,7 @@
 
+
 import React from 'react';
-import { LucideIcon, Menu, Home, Utensils, Calendar, ShoppingCart, Users, UserCircle, Search, Plus, X, Check, BookOpen } from 'lucide-react';
+import { LucideIcon, Menu, Home, Utensils, Calendar, ShoppingCart, Users, UserCircle, Search, Plus, X, Check, BookOpen, Scan, Camera } from 'lucide-react';
 
 // --- UI Primitives ---
 
@@ -31,11 +32,10 @@ export const Badge: React.FC<{ children?: React.ReactNode; color?: string }> = (
     emerald: "bg-emerald-100 text-emerald-800",
     orange: "bg-orange-100 text-orange-800",
     red: "bg-red-100 text-red-800",
-    slate: "bg-slate-100 text-slate-800"
+    slate: "bg-slate-100 text-slate-800",
+    blue: "bg-blue-100 text-blue-800"
   };
-  // Fallback for custom colors or missing keys
   const colorClass = colors[color] || colors.emerald;
-  
   return (
     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${colorClass}`}>
       {children}
@@ -63,6 +63,37 @@ export const TextArea = ({ className = "", ...props }: React.TextareaHTMLAttribu
   />
 );
 
+// New: Checkbox Component
+export const Checkbox = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (checked: boolean) => void }) => (
+  <label className="flex items-center gap-2 cursor-pointer group">
+    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+      checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white group-hover:border-emerald-300'
+    }`}>
+      {checked && <Check size={12} strokeWidth={3} />}
+    </div>
+    <span className={`text-sm ${checked ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>{label}</span>
+    <input type="checkbox" className="hidden" checked={checked} onChange={e => onChange(e.target.checked)} />
+  </label>
+);
+
+// New: Range Input Component
+export const RangeInput = ({ label, value, min, max, unit, onChange }: { label: string, value: number, min: number, max: number, unit: string, onChange: (val: number) => void }) => (
+  <div>
+    <div className="flex justify-between items-center mb-1">
+      <Label className="mb-0">{label}</Label>
+      <span className="text-sm font-medium text-emerald-600">{value} {unit}</span>
+    </div>
+    <input 
+      type="range" 
+      min={min} 
+      max={max} 
+      value={value} 
+      onChange={e => onChange(parseInt(e.target.value))}
+      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+    />
+  </div>
+);
+
 export const Modal = ({ isOpen, onClose, title, children }: any) => {
   if (!isOpen) return null;
   return (
@@ -82,8 +113,6 @@ export const Modal = ({ isOpen, onClose, title, children }: any) => {
   );
 };
 
-// --- Custom Icons ---
-
 export const FacebookIcon = ({ size = 20, className = "" }: { size?: number, className?: string }) => (
   <svg 
     width={size} 
@@ -96,8 +125,6 @@ export const FacebookIcon = ({ size = 20, className = "" }: { size?: number, cla
     <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
   </svg>
 );
-
-// --- Layout Components ---
 
 const SidebarItem = ({ icon: Icon, label, active, onClick }: { icon: LucideIcon, label: string, active: boolean, onClick: () => void }) => (
   <button
@@ -130,11 +157,15 @@ export const Layout = ({ children, currentView, onViewChange }: any) => {
         <nav className="flex-1 p-4 space-y-1">
           <SidebarItem icon={Home} label="Dashboard" active={currentView === 'dashboard'} onClick={() => onViewChange('dashboard')} />
           <SidebarItem icon={Utensils} label="My Kitchen" active={currentView === 'kitchen'} onClick={() => onViewChange('kitchen')} />
-          <SidebarItem icon={Search} label="Browse Recipes" active={currentView === 'recipes' || currentView === 'add-recipe' || currentView === 'recipe-detail'} onClick={() => onViewChange('recipes')} />
+          <SidebarItem icon={Search} label="Browse Recipes" active={currentView === 'recipes' || currentView === 'add-recipe' || currentView === 'recipe-detail' || currentView === 'recipe-indexer'} onClick={() => onViewChange('recipes')} />
           <SidebarItem icon={Calendar} label="Meal Planner" active={currentView === 'planner'} onClick={() => onViewChange('planner')} />
           <SidebarItem icon={ShoppingCart} label="Shopping List" active={currentView === 'shopping'} onClick={() => onViewChange('shopping')} />
           <SidebarItem icon={Users} label="Social Network" active={currentView === 'social'} onClick={() => onViewChange('social')} />
           <SidebarItem icon={BookOpen} label="Food Encyclopedia" active={currentView === 'encyclopedia'} onClick={() => onViewChange('encyclopedia')} />
+          
+          <div className="pt-4 mt-4 border-t border-slate-100">
+             <SidebarItem icon={Scan} label="Smart Scan" active={currentView === 'smart-scan'} onClick={() => onViewChange('smart-scan')} />
+          </div>
         </nav>
 
         <div className="p-4 border-t border-slate-100">
@@ -154,7 +185,7 @@ export const Layout = ({ children, currentView, onViewChange }: any) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-64">
+      <main className="flex-1 md:ml-64 mb-16 md:mb-0">
         <header className="bg-white border-b border-slate-200 sticky top-0 z-20 px-6 py-4 flex justify-between items-center md:hidden">
            <div className="font-bold text-emerald-600">FoodGenie</div>
            <Button variant="ghost" className="p-1"><Menu size={24}/></Button>
@@ -163,6 +194,27 @@ export const Layout = ({ children, currentView, onViewChange }: any) => {
           {children}
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
+        <button onClick={() => onViewChange('dashboard')} className={`p-2 flex flex-col items-center text-xs ${currentView === 'dashboard' ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <Home size={20} /> Home
+        </button>
+        <button onClick={() => onViewChange('kitchen')} className={`p-2 flex flex-col items-center text-xs ${currentView === 'kitchen' ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <Utensils size={20} /> Kitchen
+        </button>
+        <button onClick={() => onViewChange('smart-scan')} className="p-2 -mt-8 flex flex-col items-center">
+            <div className="w-14 h-14 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-600/30 border-4 border-slate-50">
+                <Scan size={24} />
+            </div>
+        </button>
+        <button onClick={() => onViewChange('recipes')} className={`p-2 flex flex-col items-center text-xs ${currentView === 'recipes' ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <Search size={20} /> Recipes
+        </button>
+        <button onClick={() => onViewChange('profile')} className={`p-2 flex flex-col items-center text-xs ${currentView === 'profile' ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <Users size={20} /> Profile
+        </button>
+      </div>
     </div>
   );
 };

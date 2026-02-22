@@ -1,23 +1,36 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Plus, Trash2, Camera, Upload } from 'lucide-react';
 import { Card, Button, Input, TextArea, Label } from './components';
-import { api, FoodNode, USERS } from './data';
+import { api, FoodNode, USERS, Recipe } from './data';
 
-export default function AddRecipe({ onBack }: { onBack: () => void }) {
+interface AddRecipeProps {
+  onBack: () => void;
+  initialData?: Partial<Recipe>;
+}
+
+export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
   const [ingredients, setIngredients] = useState<FoodNode[]>([]);
-  const [recipeImage, setRecipeImage] = useState<string | null>(null);
+  const [recipeImage, setRecipeImage] = useState<string | null>(initialData?.image || null);
   
   // Form State
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [prepTime, setPrepTime] = useState("");
-  const [cookTime, setCookTime] = useState("");
-  const [servings, setServings] = useState("");
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [description, setDescription] = useState(initialData?.description || "");
+  const [prepTime, setPrepTime] = useState(initialData?.prep_time?.toString() || "");
+  const [cookTime, setCookTime] = useState(initialData?.cook_time?.toString() || "");
+  const [servings, setServings] = useState(initialData?.servings?.toString() || "");
+  const [calories, setCalories] = useState(initialData?.calories?.toString() || "");
+  const [cuisine, setCuisine] = useState(initialData?.cuisine || "");
+  const [tags, setTags] = useState(initialData?.tags?.join(", ") || "");
   
-  const [recipeIngredients, setRecipeIngredients] = useState([
-    { ingredientId: "", quantity: "", unit: "" }
-  ]);
+  const [recipeIngredients, setRecipeIngredients] = useState(
+    initialData?.ingredients?.map(i => ({
+        ingredientId: i.food_node_id.toString(),
+        quantity: i.quantity.toString(),
+        unit: i.unit
+    })) || [{ ingredientId: "", quantity: "", unit: "" }]
+  );
 
   const [instructions, setInstructions] = useState([""]);
 
@@ -60,12 +73,15 @@ export default function AddRecipe({ onBack }: { onBack: () => void }) {
       title,
       description,
       image: recipeImage || "https://images.unsplash.com/photo-1495521821758-ee18ece6d638?auto=format&fit=crop&w=800&q=80",
-      prep_time: parseInt(prepTime),
-      cook_time: parseInt(cookTime),
-      servings: parseInt(servings),
+      prep_time: parseInt(prepTime) || 0,
+      cook_time: parseInt(cookTime) || 0,
+      servings: parseInt(servings) || 1,
+      calories: parseInt(calories) || 0,
+      cuisine: cuisine,
+      tags: tags.split(',').map(t => t.trim()).filter(t => t.length > 0),
       ingredients: recipeIngredients.map(ri => ({
         food_node_id: parseInt(ri.ingredientId),
-        quantity: parseFloat(ri.quantity),
+        quantity: parseFloat(ri.quantity) || 0,
         unit: ri.unit
       })),
       author: USERS[0] // Simulate current user
@@ -81,8 +97,17 @@ export default function AddRecipe({ onBack }: { onBack: () => void }) {
         <Button variant="ghost" onClick={onBack} className="p-2">
           <ChevronLeft size={24} />
         </Button>
-        <h1 className="text-2xl font-bold text-slate-800">Add New Recipe</h1>
+        <h1 className="text-2xl font-bold text-slate-800">
+            {initialData ? "Review & Publish Recipe" : "Add New Recipe"}
+        </h1>
       </div>
+      
+      {initialData && (
+        <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center gap-3 text-emerald-800 text-sm">
+            <Camera size={20} />
+            Data extracted from image. Please review accuracy before publishing.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Basic Info Card */}
@@ -104,8 +129,14 @@ export default function AddRecipe({ onBack }: { onBack: () => void }) {
             <div className="md:col-span-1">
               <Label>Recipe Photo</Label>
               <div className="mt-1 border-2 border-dashed border-slate-300 rounded-xl h-40 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-slate-400 hover:text-emerald-600">
-                <Camera size={32} className="mb-2" />
-                <span className="text-xs font-medium">Upload Photo</span>
+                {recipeImage ? (
+                    <img src={recipeImage} className="w-full h-full object-cover rounded-lg" />
+                ) : (
+                    <>
+                        <Camera size={32} className="mb-2" />
+                        <span className="text-xs font-medium">Upload Photo</span>
+                    </>
+                )}
               </div>
             </div>
           </div>
@@ -122,6 +153,21 @@ export default function AddRecipe({ onBack }: { onBack: () => void }) {
             <div>
               <Label htmlFor="servings">Servings</Label>
               <Input id="servings" type="number" placeholder="4" value={servings} onChange={e => setServings(e.target.value)} required />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="calories">Calories (kcal)</Label>
+              <Input id="calories" type="number" placeholder="450" value={calories} onChange={e => setCalories(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="cuisine">Cuisine</Label>
+              <Input id="cuisine" placeholder="e.g. Italian" value={cuisine} onChange={e => setCuisine(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="tags">Tags (comma separated)</Label>
+              <Input id="tags" placeholder="Healthy, Spicy" value={tags} onChange={e => setTags(e.target.value)} />
             </div>
           </div>
         </Card>

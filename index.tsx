@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Layout, Card, Button, Badge } from './components';
@@ -12,6 +13,8 @@ import AddRecipe from './AddRecipe';
 import FoodEncyclopedia from './FoodEncyclopedia';
 import Profile from './Profile';
 import Auth from './Auth';
+import SmartScanner from './SmartScanner';
+import RecipeIndexer from './RecipeIndexer';
 import { 
   ChefHat, CalendarDays, ShoppingBag, ArrowRight, Star, 
   Flame, TrendingUp, Users, Clock, AlertTriangle, ExternalLink,
@@ -362,18 +365,25 @@ const App = () => {
       case 'kitchen': return <MyKitchen />;
       case 'recipes': return <Recipes onNavigate={navigate} />;
       case 'recipe-detail': return <RecipeDetail recipeId={routeParams.id} onBack={() => navigate('recipes')} />;
-      case 'add-recipe': return <AddRecipe onBack={() => navigate('recipes')} />;
+      case 'add-recipe': return <AddRecipe onBack={() => navigate('recipes')} initialData={routeParams.initialData} />;
       case 'planner': return <MealPlanner />;
       case 'shopping': return <ShoppingList />;
       case 'social': return <SocialNetwork />;
       case 'encyclopedia': return <FoodEncyclopedia initialFoodId={routeParams.id} onNavigate={navigate} />;
       case 'profile': return <Profile />;
+      case 'smart-scan': return <SmartScanner onNavigate={navigate} />;
+      case 'recipe-indexer': return <RecipeIndexer onScanComplete={(data) => navigate('add-recipe', { initialData: data })} onCancel={() => navigate('recipes')} />;
       default: return <Dashboard onChangeView={navigate} />;
     }
   };
 
   if (!isAuthenticated) {
     return <Auth onLogin={handleLogin} />;
+  }
+
+  // Smart Scanner and Recipe Indexer take over the full screen, bypassing the main layout
+  if (currentView === 'smart-scan' || currentView === 'recipe-indexer') {
+      return renderView();
   }
 
   return (

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Folder, Tag, ShoppingCart, Plus, ArrowLeft, Search, CheckCircle2, AlertCircle, Info, Thermometer, Utensils, Zap, Activity } from 'lucide-react';
-import { Card, Button, Badge, Modal } from './components';
+import { ChevronRight, Folder, Tag, ShoppingCart, Plus, ArrowLeft, Search, CheckCircle2, AlertCircle, Info, Thermometer, Utensils, Zap, Activity, Filter } from 'lucide-react';
+import { Card, Button, Badge, Modal, Checkbox } from './components';
 import { api, FoodNode, Recipe, PantryItem } from './data';
 
 interface FoodEncyclopediaProps {
@@ -17,14 +17,11 @@ export default function FoodEncyclopedia({ initialFoodId, onNavigate }: FoodEncy
   const [pantryStatus, setPantryStatus] = useState<PantryItem | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Search State
+  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
-  const [allNodes, setAllNodes] = useState<FoodNode[]>([]);
   const [searchResults, setSearchResults] = useState<FoodNode[]>([]);
-
-  useEffect(() => {
-    api.getFoodNodes().then(setAllNodes);
-  }, []);
+  const [showCategories, setShowCategories] = useState(true);
+  const [showProducts, setShowProducts] = useState(true);
 
   useEffect(() => {
     loadNode(initialFoodId || 1); // Default to Root (ID 1)
@@ -40,12 +37,12 @@ export default function FoodEncyclopedia({ initialFoodId, onNavigate }: FoodEncy
       const ancestry = await api.getFoodNodeParents(id);
       setParents(ancestry);
 
-      // Find related recipes
+      // Find related recipes (using fuzzy matching logic logic implicitly)
       const allRecipes = await api.getRecipes();
+      const allNodes = await api.getFoodNodes();
+      
       const related = allRecipes.filter(r => 
         r.ingredients.some(i => {
-            // Match if recipe uses this item OR any child of this item (using path logic)
-            // Ideally this is a backend recursive query, but we simulate it:
             const ingredientNode = allNodes.find(n => n.id === i.food_node_id);
             return ingredientNode?.id === id || ingredientNode?.path.startsWith(node.path);
         })
@@ -54,7 +51,6 @@ export default function FoodEncyclopedia({ initialFoodId, onNavigate }: FoodEncy
 
       // Check Inventory
       const pantry = await api.getPantry();
-      // Check if we have this exact item or a child item
       const item = pantry.find(p => {
           const pNode = allNodes.find(n => n.id === p.food_node_id);
           return pNode && pNode.path.startsWith(node.path);
@@ -64,19 +60,25 @@ export default function FoodEncyclopedia({ initialFoodId, onNavigate }: FoodEncy
     setLoading(false);
   };
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const q = e.target.value.toLowerCase();
-    setSearchQuery(q);
-    if (q.length > 1) {
-        setSearchResults(allNodes.filter(n => 
-            n.name.toLowerCase().includes(q) || 
-            n.description?.toLowerCase().includes(q) || 
-            n.type.includes(q)
-        ));
-    } else {
-        setSearchResults([]);
-    }
-  };
+  // Debounced Search with Filtering
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+        if (searchQuery.length > 1) {
+            const results = await api.searchNodes(searchQuery);
+            // Filter results based on checkboxes
+            const filtered = results.filter(n => {
+                if (!showCategories && n.type === 'category') return false;
+                if (!showProducts && (n.type === 'generic_food' || n.type === 'branded_product')) return false;
+                return true;
+            });
+            setSearchResults(filtered);
+        } else {
+            setSearchResults([]);
+        }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, showCategories, showProducts]);
 
   const navigateTo = (id: number) => {
     setSearchQuery("");
@@ -84,36 +86,52 @@ export default function FoodEncyclopedia({ initialFoodId, onNavigate }: FoodEncy
     loadNode(id);
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-400">Loading Encyclopedia...</div>;
+  if (loading && !currentNode) return <div className="p-8 text-center text-slate-400">Loading Encyclopedia...</div>;
   if (!currentNode) return <div className="p-8 text-center">Item not found</div>;
 
   return (
     <div className="space-y-6">
-      {/* Search Header */}
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-slate-400" />
+      {/* Enhanced Search Header */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+        <div className="relative mb-3">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-slate-400" />
+            </div>
+            <input
+                type="text"
+                className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                placeholder="Search ingredients, products, brands..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+            />
         </div>
-        <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm shadow-sm"
-            placeholder="Search ingredients, products, brands..."
-            value={searchQuery}
-            onChange={handleSearch}
-        />
+        <div className="flex gap-4">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider py-1">Filters:</div>
+            <Checkbox label="Categories" checked={showCategories} onChange={setShowCategories} />
+            <Checkbox label="Foods & Products" checked={showProducts} onChange={setShowProducts} />
+        </div>
+
+        {/* Search Results Dropdown/Overlay */}
         {searchResults.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-slate-100 max-h-60 overflow-auto">
+            <div className="absolute z-20 left-0 right-0 mt-2 mx-4 md:mx-8 bg-white rounded-xl shadow-2xl border border-slate-100 max-h-96 overflow-auto">
                 {searchResults.map(result => (
                     <button
                         key={result.id}
                         onClick={() => navigateTo(result.id)}
-                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm text-slate-700 flex justify-between items-center border-b border-slate-50 last:border-0"
+                        className="w-full text-left px-6 py-3 hover:bg-slate-50 text-sm text-slate-700 flex justify-between items-center border-b border-slate-50 last:border-0"
                     >
-                        <div>
-                            <span className="font-medium">{result.name}</span>
-                            <span className="text-xs text-slate-400 ml-2 block truncate w-64">{result.description}</span>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
+                                {result.type === 'category' ? <Folder size={16}/> : <Tag size={16}/>}
+                            </div>
+                            <div>
+                                <span className="font-bold text-slate-800 block">{result.name}</span>
+                                {result.description && <span className="text-xs text-slate-400 line-clamp-1">{result.description}</span>}
+                            </div>
                         </div>
-                        <Badge color="slate">{result.type.replace('_', ' ')}</Badge>
+                        <Badge color={result.type === 'category' ? 'blue' : 'orange'}>
+                            {result.type.replace('_', ' ')}
+                        </Badge>
                     </button>
                 ))}
             </div>
@@ -127,10 +145,10 @@ export default function FoodEncyclopedia({ initialFoodId, onNavigate }: FoodEncy
             <button onClick={() => navigateTo(parent.id)} className="hover:text-emerald-600 transition-colors">
               {parent.name}
             </button>
-            <ChevronRight size={14} className="mx-2 flex-shrink-0" />
+            <ChevronRight size={14} className="mx-2 flex-shrink-0 text-slate-300" />
           </React.Fragment>
         ))}
-        <span className="font-semibold text-emerald-700">{currentNode.name}</span>
+        <span className="font-bold text-slate-800 px-2 py-1 bg-slate-100 rounded-md">{currentNode.name}</span>
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -173,63 +191,65 @@ export default function FoodEncyclopedia({ initialFoodId, onNavigate }: FoodEncy
             </div>
 
             {/* Rich Data Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Nutrition Card */}
-                {currentNode.nutrition && (
-                    <Card className="p-5 border-l-4 border-l-emerald-500">
-                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <Activity size={18} className="text-emerald-500" /> Nutrition <span className="text-xs font-normal text-slate-400">(per 100g)</span>
-                        </h3>
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                                <span className="text-slate-500">Calories</span>
-                                <span className="font-bold text-slate-800">{currentNode.nutrition.calories} kcal</span>
+            {(currentNode.nutrition || currentNode.pairings || currentNode.storage) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Nutrition Card */}
+                    {currentNode.nutrition && (
+                        <Card className="p-5 border-l-4 border-l-emerald-500">
+                            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <Activity size={18} className="text-emerald-500" /> Nutrition <span className="text-xs font-normal text-slate-400">(per 100g)</span>
+                            </h3>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                                    <span className="text-slate-500">Calories</span>
+                                    <span className="font-bold text-slate-800">{currentNode.nutrition.calories} kcal</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">Protein</span>
+                                    <span>{currentNode.nutrition.protein}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">Fat</span>
+                                    <span>{currentNode.nutrition.fat}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">Carbs</span>
+                                    <span>{currentNode.nutrition.carbs}</span>
+                                </div>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-slate-500">Protein</span>
-                                <span>{currentNode.nutrition.protein}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-slate-500">Fat</span>
-                                <span>{currentNode.nutrition.fat}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-slate-500">Carbs</span>
-                                <span>{currentNode.nutrition.carbs}</span>
-                            </div>
-                        </div>
-                    </Card>
-                )}
+                        </Card>
+                    )}
 
-                {/* Flavor & Pairings */}
-                {currentNode.pairings && (
-                    <Card className="p-5 border-l-4 border-l-orange-500">
-                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                            <Utensils size={18} className="text-orange-500"/> Flavor Profile
-                        </h3>
-                        <p className="text-sm text-slate-500 mb-3">Commonly paired with:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {currentNode.pairings.map(pair => (
-                                <span key={pair} className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
-                                    {pair}
-                                </span>
-                            ))}
-                        </div>
-                    </Card>
-                )}
+                    {/* Flavor & Pairings */}
+                    {currentNode.pairings && (
+                        <Card className="p-5 border-l-4 border-l-orange-500">
+                            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <Utensils size={18} className="text-orange-500"/> Flavor Profile
+                            </h3>
+                            <p className="text-sm text-slate-500 mb-3">Commonly paired with:</p>
+                            <div className="flex flex-wrap gap-2">
+                                {currentNode.pairings.map(pair => (
+                                    <span key={pair} className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                                        {pair}
+                                    </span>
+                                ))}
+                            </div>
+                        </Card>
+                    )}
 
-                {/* Storage Tips */}
-                {currentNode.storage && (
-                    <Card className="p-5 border-l-4 border-l-blue-500 md:col-span-2">
-                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                            <Thermometer size={18} className="text-blue-500"/> Storage Tips
-                        </h3>
-                        <p className="text-slate-600 leading-relaxed">
-                            {currentNode.storage}
-                        </p>
-                    </Card>
-                )}
-            </div>
+                    {/* Storage Tips */}
+                    {currentNode.storage && (
+                        <Card className="p-5 border-l-4 border-l-blue-500 md:col-span-2">
+                            <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                <Thermometer size={18} className="text-blue-500"/> Storage Tips
+                            </h3>
+                            <p className="text-slate-600 leading-relaxed">
+                                {currentNode.storage}
+                            </p>
+                        </Card>
+                    )}
+                </div>
+            )}
 
             {/* Children / Varieties Browser */}
             {children.length > 0 && (
@@ -239,14 +259,14 @@ export default function FoodEncyclopedia({ initialFoodId, onNavigate }: FoodEncy
                             {currentNode.type === 'category' ? <Folder size={24} className="text-emerald-500"/> : <Tag size={24} className="text-emerald-500"/>}
                             {currentNode.type === 'category' ? 'Subcategories & Varieties' : 'Brands & Specifics'}
                         </h2>
-                        <span className="text-sm text-slate-500">{children.length} items</span>
+                        <span className="text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded-full">{children.length} items</span>
                     </div>
                     
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {children.map(child => (
                             <Card 
                                 key={child.id} 
-                                className="hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer group h-full"
+                                className="hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer group h-full border border-slate-200"
                                 onClick={() => navigateTo(child.id)}
                             >
                                 <div className="p-4 flex flex-col h-full">
@@ -255,7 +275,7 @@ export default function FoodEncyclopedia({ initialFoodId, onNavigate }: FoodEncy
                                             {child.type === 'category' ? <Folder size={20} className="text-slate-400 group-hover:text-emerald-500"/> : <Tag size={20} className="text-slate-400 group-hover:text-emerald-500"/>}
                                         </div>
                                     </div>
-                                    <h3 className="font-semibold text-slate-700 group-hover:text-emerald-700 mb-1">{child.name}</h3>
+                                    <h3 className="font-semibold text-slate-700 group-hover:text-emerald-700 mb-1 leading-tight">{child.name}</h3>
                                     {child.description && (
                                         <p className="text-xs text-slate-400 line-clamp-2 mt-auto">{child.description}</p>
                                     )}
