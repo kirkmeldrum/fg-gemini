@@ -1,22 +1,25 @@
 {
   "name": "foodgenie",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "description": "FoodGenie — AI-powered kitchen companion platform",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "pnpm --filter @foodgenie/api dev & pnpm --filter @foodgenie/web dev",
+    "dev:api": "pnpm --filter @foodgenie/api dev",
+    "dev:web": "pnpm --filter @foodgenie/web dev",
+    "build": "pnpm -r build",
+    "build:api": "pnpm --filter @foodgenie/api build",
+    "build:web": "pnpm --filter @foodgenie/web build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "db:migrate": "pnpm --filter @foodgenie/api db:migrate",
+    "db:seed": "pnpm --filter @foodgenie/api db:seed",
+    "db:reset": "pnpm --filter @foodgenie/api db:reset",
+    "clean": "pnpm -r clean && rimraf node_modules"
   },
-  "dependencies": {
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "lucide-react": "^0.556.0"
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
   },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
-  }
+  "packageManager": "pnpm@9.15.0"
 }

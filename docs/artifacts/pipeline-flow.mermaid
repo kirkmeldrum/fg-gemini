@@ -1,0 +1,62 @@
+graph TB
+    subgraph Phase0["Phase 0: DISCOVER"]
+        P0A[Problem Statement] --> P0B[User Roles]
+        P0B --> P0C[Feature Brain Dump]
+        P0C --> P0D[Feasibility Assessment]
+    end
+
+    subgraph Phase1["Phase 1: DEFINE"]
+        P1A[User Stories] --> P1B[Acceptance Criteria]
+        P1B --> P1C[MoSCoW Prioritization]
+        P1C --> P1D[REQUIREMENTS.md]
+    end
+
+    subgraph Phase2["Phase 2: DESIGN"]
+        P2A[Page Inventory] --> P2B[Low-Fi Wireframes]
+        P2B --> P2C[Annotated Wireframes]
+        P2C --> P2D[High-Fi Mockups]
+        P2D --> P2E[Gap Analysis]
+        P2E -->|Update| P1D
+    end
+
+    subgraph Phase3["Phase 3: ARCHITECT"]
+        P3A[Stack Selection] --> P3B[DATABASE.md + DDL]
+        P3B --> P3C[API.md]
+        P3C --> P3D[ARCHITECTURE.md]
+        P3D --> P3E[Bootstrap Files]
+    end
+
+    subgraph Phase4["Phase 4: BUILD"]
+        P4A[Sprint Planning] --> P4B[Read PROJECT_STATUS.md]
+        P4B --> P4C[AI Development Session]
+        P4C --> P4D[Quick Validation]
+        P4D --> P4E[Git Commit]
+        P4E -->|Next Sprint| P4A
+    end
+
+    subgraph Phase5["Phase 5: VALIDATE"]
+        P5A[Functional Testing] --> P5B[Integration Testing]
+        P5B --> P5C[Regression Testing]
+        P5C --> P5D[UAT]
+    end
+
+    subgraph Phase6["Phase 6: DEPLOY"]
+        P6A[Environment Setup] --> P6B[Database Migration]
+        P6B --> P6C[Application Deploy]
+        P6C --> P6D[Smoke Test]
+    end
+
+    Phase0 -->|"Gate 0: Understand problem?"| Phase1
+    Phase1 -->|"Gate 1: Requirements complete?"| Phase2
+    Phase2 -->|"Gate 2: Design approved?"| Phase3
+    Phase3 -->|"Gate 3: Architecture ready?"| Phase4
+    Phase4 -->|"Gate 4: Sprint accepted?"| Phase5
+    Phase5 -->|"Gate 5: Release approved?"| Phase6
+
+    style Phase0 fill:#7c3aed,color:#fff
+    style Phase1 fill:#2563eb,color:#fff
+    style Phase2 fill:#0d9488,color:#fff
+    style Phase3 fill:#d97706,color:#fff
+    style Phase4 fill:#16a34a,color:#fff
+    style Phase5 fill:#dc2626,color:#fff
+    style Phase6 fill:#374151,color:#fff

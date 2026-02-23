@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodGenie Stack Decision: Node.js vs Laravel</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222533;
+    --border: #2d3148;
+    --text: #e4e6f0;
+    --text-dim: #8b8fa8;
+    --node-green: #22c55e;
+    --node-green-dim: rgba(34,197,94,0.12);
+    --laravel-red: #ef4444;
+    --laravel-red-dim: rgba(239,68,68,0.12);
+    --accent-blue: #60a5fa;
+    --accent-amber: #f59e0b;
+    --winner: #fbbf24;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+
+  /* HERO */
+  .hero {
+    padding: 4rem 0 3rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(ellipse, var(--node-green-dim) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(ellipse, var(--laravel-red-dim) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.8rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    position: relative;
+  }
+  .hero .subtitle {
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    margin-top: 0.75rem;
+    max-width: 700px;
+    position: relative;
+  }
+
+  /* SECTION HEADERS */
+  .section-header {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    font-weight: 400;
+    padding: 3rem 0 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  .section-header span {
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* SCOREBOARD */
+  .scoreboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .score-card.node { border-left: 3px solid var(--node-green); }
+  .score-card.laravel { border-left: 3px solid var(--laravel-red); }
+  .score-card h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .score-card .score {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3rem;
+  }
+  .score-card.node .score { color: var(--node-green); }
+  .score-card.laravel .score { color: var(--laravel-red); }
+  .score-card .detail { color: var(--text-dim); font-size: 0.9rem; margin-top: 0.25rem; }
+
+  /* COMPARISON TABLE */
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+  }
+  .comparison-table thead th {
+    background: var(--surface2);
+    padding: 1rem 1.25rem;
+    text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    border-bottom: 2px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .comparison-table thead th:nth-child(2) { color: var(--node-green); }
+  .comparison-table thead th:nth-child(3) { color: var(--laravel-red); }
+  .comparison-table thead th:nth-child(4) { color: var(--winner); }
+  .comparison-table tbody td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .comparison-table tbody tr:hover { background: var(--surface); }
+  .comparison-table .feature-name {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .win-node { color: var(--node-green); font-weight: 600; }
+  .win-laravel { color: var(--laravel-red); font-weight: 600; }
+  .win-tie { color: var(--accent-blue); font-weight: 600; }
+
+  /* CODE BLOCKS */
+  .code-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .code-block-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .code-block-header .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .code-block.node .dot { background: var(--node-green); }
+  .code-block.laravel .dot { background: var(--laravel-red); }
+  .code-block pre {
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: #c9d1d9;
+  }
+  .code-block pre .comment { color: #6e7681; }
+  .code-block pre .keyword { color: #ff7b72; }
+  .code-block pre .string { color: #a5d6ff; }
+  .code-block pre .func { color: #d2a8ff; }
+  .code-block pre .type { color: #79c0ff; }
+
+  /* VERDICT CARDS */
+  .verdict-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  .verdict-card h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+  }
+  .verdict-card p { color: var(--text-dim); margin-bottom: 0.75rem; }
+  .verdict-card strong { color: var(--text); }
+
+  /* SCENARIO BLOCKS */
+  .scenario {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .scenario h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .scenario h4 .emoji { font-size: 1.2rem; }
+  .scenario .point {
+    padding: 0.5rem 0;
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(45,49,72,0.5);
+    font-size: 0.92rem;
+  }
+  .scenario .point:last-child { border-bottom: none; }
+  .scenario .point .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-top: 2px;
+  }
+
+  /* RECOMMENDATION */
+  .recommendation {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(96,165,250,0.08));
+    border: 2px solid var(--node-green);
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin: 3rem 0;
+    position: relative;
+  }
+  .recommendation::before {
+    content: 'RECOMMENDATION';
+    position: absolute;
+    top: -12px;
+    left: 2rem;
+    background: var(--bg);
+    padding: 0 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--node-green);
+    font-weight: 600;
+  }
+  .recommendation h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+  }
+  .recommendation p { color: var(--text-dim); margin-bottom: 0.75rem; }
+
+  /* RISK TABLE */
+  .risk-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    align-items: start;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .risk-item:last-child { border-bottom: none; }
+  .risk-severity {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .risk-severity.high { background: rgba(239,68,68,0.2); color: #ef4444; }
+  .risk-severity.medium { background: rgba(245,158,11,0.2); color: #f59e0b; }
+  .risk-severity.low { background: rgba(34,197,94,0.2); color: #22c55e; }
+  .risk-mitigation {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent-blue);
+  }
+
+  /* FOOTER */
+  .doc-footer {
+    padding: 3rem 0;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  @media (max-width: 900px) {
+    .scoreboard, .code-comparison { grid-template-columns: 1fr; }
+    .comparison-table { font-size: 0.82rem; }
+    .hero h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>FoodGenie Stack Decision</h1>
+    <p class="subtitle">A concrete, FoodGenie-specific comparison of Node.js + Express vs. PHP/Laravel — evaluated against actual feature requirements, AI integration patterns, and your development context.</p>
+  </div>
+
+  <!-- SECTION 1: SCORECARD -->
+  <h2 class="section-header">
+    <span>Section 01</span>
+    Final Score: FoodGenie-Weighted Criteria
+  </h2>
+
+  <div class="scoreboard">
+    <div class="score-card node">
+      <h3>Node.js + Express + React</h3>
+      <div class="score">7 / 10</div>
+      <div class="detail">Wins on AI, concurrency, cost, your experience</div>
+    </div>
+    <div class="score-card laravel">
+      <h3>PHP / Laravel + React SPA</h3>
+      <div class="score">6 / 10</div>
+      <div class="detail">Wins on speed-to-market, ecosystem, team hiring</div>
+    </div>
+  </div>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>FoodGenie Feature Area</th>
+        <th>● Node.js</th>
+        <th>● Laravel</th>
+        <th>★ Winner</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="feature-name">AI Recipe Parsing (RAG Pipeline)</td>
+        <td>Native async/await. Stream tokens to UI in real-time. OpenAI & Anthropic SDKs are JS-first. LangChain.js mature.</td>
+        <td>Laravel Prism exists but is newer. AI calls block PHP-FPM workers unless queued via Horizon. No native streaming to client without WebSocket sidecar.</td>
+        <td class="win-node">Node.js</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Receipt OCR & Inventory Ingestion</td>
+        <td>Process image → OCR → LLM normalize → DB write as single async pipeline. Can handle 50+ concurrent scans on one process.</td>
+        <td>Must queue to Horizon job. User gets "processing..." state. Worker pool limits concurrent scans. Works, but adds latency and infrastructure.</td>
+        <td class="win-node">Node.js</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Inventory → Recipe Matching</td>
+        <td>Write SQL/graph queries, return results. Both stacks equal here — this is a database operation, not a runtime concern.</td>
+        <td>Eloquent ORM with eager loading makes complex queries more readable. Scout integration for search. Slightly more ergonomic.</td>
+        <td class="win-tie">Tie</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Real-time Features (Live Inventory, Meal Plan Collab)</td>
+        <td>Socket.io or native WS. Same process, same port. Trivial to broadcast inventory changes to household members.</td>
+        <td>Requires Laravel Reverb (new) or Pusher. Separate process. Additional infrastructure to manage.</td>
+        <td class="win-node">Node.js</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Authentication (Sanctum-style SPA Auth)</td>
+        <td>Passport.js or custom JWT. Works but requires manual setup: cookie config, CSRF, refresh tokens, session store.</td>
+        <td>Sanctum ships SPA auth out of the box. HTTP-only cookies, CSRF protection, mobile token support — 3 commands to install.</td>
+        <td class="win-laravel">Laravel</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Role-Based Access Control (User/Vendor/Admin)</td>
+        <td>Custom middleware. Flexible but you build everything. Role/permission tables, policy checks, all manual.</td>
+        <td>Spatie/Permission package. Mature, tested, well-documented. Roles, permissions, middleware guards — installed in minutes.</td>
+        <td class="win-laravel">Laravel</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Background Jobs (Email, Notifications, AI Tasks)</td>
+        <td>BullMQ + Redis. Powerful but requires separate worker process and dashboard setup.</td>
+        <td>Laravel Horizon. Queue monitoring dashboard, job retries, rate limiting, concurrent workers — all built-in and beautiful.</td>
+        <td class="win-laravel">Laravel</td>
+      </tr>
+      <tr>
+        <td class="feature-name">SQL Server Compatibility</td>
+        <td><code>mssql</code> package is production-grade. Used by Microsoft Azure tooling. First-class driver.</td>
+        <td><code>sqlsrv</code> driver works but is not primary. Many community packages assume MySQL/PostgreSQL. Edge-case issues likely.</td>
+        <td class="win-node">Node.js</td>
+      </tr>
+      <tr>
+        <td class="feature-name">API Development Speed</td>
+        <td>Manual routing, validation (Joi/Zod), error handling, pagination, rate limiting. ~2x more boilerplate per endpoint.</td>
+        <td>Route model binding, FormRequest validation, API Resources, built-in pagination, rate limiting middleware. 50% less code per endpoint.</td>
+        <td class="win-laravel">Laravel</td>
+      </tr>
+      <tr>
+        <td class="feature-name">Hosting Cost at Scale (10K DAU)</td>
+        <td>Single Node process handles thousands of connections. ~$50-100/mo on basic VPS. Scales horizontally with PM2 cluster.</td>
+        <td>PHP-FPM needs more RAM per worker. Horizon adds another process. ~$100-200/mo. Octane (Swoole) improves this but adds complexity.</td>
+        <td class="win-node">Node.js</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 2: CODE COMPARISON -->
+  <h2 class="section-header">
+    <span>Section 02</span>
+    Side-by-Side: Core FoodGenie Patterns
+  </h2>
+
+  <h3 style="color:var(--accent-amber); font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin-bottom:1rem; text-transform:uppercase; letter-spacing:0.08em;">Pattern 1: AI Recipe Parsing Endpoint</h3>
+
+  <div class="code-comparison">
+    <div class="code-block node">
+      <div class="code-block-header"><span class="dot"></span> Node.js + Express</div>
+      <pre><span class="comment">// routes/recipes.js</span>
+<span class="keyword">import</span> Anthropic <span class="keyword">from</span> <span class="string">'@anthropic-ai/sdk'</span>;
+<span class="keyword">import</span> { parseRecipeUrl } <span class="keyword">from</span> <span class="string">'../services/recipeScraper.js'</span>;
+
+router.<span class="func">post</span>(<span class="string">'/recipes/parse'</span>, auth, <span class="keyword">async</span> (req, res) => {
+  <span class="keyword">const</span> { url } = req.body;
+
+  <span class="comment">// Step 1: Scrape structured data (JSON-LD first)</span>
+  <span class="keyword">const</span> raw = <span class="keyword">await</span> <span class="func">parseRecipeUrl</span>(url);
+
+  <span class="comment">// Step 2: AI normalization with streaming</span>
+  <span class="keyword">const</span> client = <span class="keyword">new</span> <span class="type">Anthropic</span>();
+  res.<span class="func">setHeader</span>(<span class="string">'Content-Type'</span>, <span class="string">'text/event-stream'</span>);
+
+  <span class="keyword">const</span> stream = <span class="keyword">await</span> client.messages.<span class="func">stream</span>({
+    model: <span class="string">'claude-sonnet-4-5-20250929'</span>,
+    max_tokens: 2000,
+    messages: [{
+      role: <span class="string">'user'</span>,
+      content: <span class="string">`Parse this recipe and return JSON:
+        ${JSON.stringify(raw)}
+        Map ingredients to canonical names.`</span>
+    }]
+  });
+
+  <span class="comment">// Stream tokens directly to the browser</span>
+  <span class="keyword">for await</span> (<span class="keyword">const</span> event <span class="keyword">of</span> stream) {
+    <span class="keyword">if</span> (event.type === <span class="string">'content_block_delta'</span>) {
+      res.<span class="func">write</span>(<span class="string">`data: ${event.delta.text}\n\n`</span>);
+    }
+  }
+  res.<span class="func">end</span>();
+});</pre>
+    </div>
+    <div class="code-block laravel">
+      <div class="code-block-header"><span class="dot"></span> Laravel + Prism</div>
+      <pre><span class="comment">// app/Http/Controllers/RecipeController.php</span>
+<span class="keyword">use</span> EchoLabs\Prism\Prism;
+<span class="keyword">use</span> App\Jobs\ParseRecipeJob;
+
+<span class="keyword">class</span> <span class="type">RecipeController</span> <span class="keyword">extends</span> <span class="type">Controller</span>
+{
+    <span class="keyword">public function</span> <span class="func">parse</span>(Request $request)
+    {
+        $request-><span class="func">validate</span>([<span class="string">'url'</span> => <span class="string">'required|url'</span>]);
+
+        <span class="comment">// Option A: Synchronous (blocks worker)</span>
+        $response = Prism::<span class="func">text</span>()
+            -><span class="func">using</span>(<span class="string">'anthropic'</span>, <span class="string">'claude-sonnet-4-5-20250929'</span>)
+            -><span class="func">withPrompt</span>(<span class="string">"Parse this recipe..."</span>)
+            -><span class="func">generate</span>();
+
+        <span class="comment">// Option B: Queue it (user waits)</span>
+        <span class="type">ParseRecipeJob</span>::<span class="func">dispatch</span>($request->url)
+            -><span class="func">onQueue</span>(<span class="string">'ai'</span>);
+
+        <span class="keyword">return</span> <span class="func">response</span>()-><span class="func">json</span>([
+            <span class="string">'status'</span> => <span class="string">'processing'</span>,
+            <span class="string">'message'</span> => <span class="string">'Check back shortly...'</span>
+        ]);
+
+        <span class="comment">// ⚠️ No native streaming to browser
+        // Requires Reverb WebSocket or polling</span>
+    }
+}</pre>
+    </div>
+  </div>
+
+  <h3 style="color:var(--accent-amber); font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin-bottom:1rem; text-transform:uppercase; letter-spacing:0.08em;">Pattern 2: Inventory → Recipe Matching</h3>
+
+  <div class="code-comparison">
+    <div class="code-block node">
+      <div class="code-block-header"><span class="dot"></span> Node.js + mssql</div>
+      <pre><span class="comment">// services/recipeMatchService.js</span>
+<span class="keyword">import</span> sql <span class="keyword">from</span> <span class="string">'mssql'</span>;
+
+<span class="keyword">export async function</span> <span class="func">findCookableRecipes</span>(userId, threshold = 0.8) {
+  <span class="keyword">const</span> result = <span class="keyword">await</span> sql.<span class="func">query</span><span class="string">`
+    WITH UserIngredients AS (
+      SELECT DISTINCT i.canonical_id
+      FROM user_inventory ui
+      JOIN ingredients i ON ui.ingredient_id = i.id
+      WHERE ui.user_id = ${userId}
+        AND ui.quantity > 0
+    ),
+    RecipeCoverage AS (
+      SELECT
+        r.id, r.title,
+        COUNT(ri.ingredient_id) AS total_ingredients,
+        COUNT(ui.canonical_id) AS matched,
+        CAST(COUNT(ui.canonical_id) AS FLOAT)
+          / COUNT(ri.ingredient_id) AS coverage
+      FROM recipes r
+      JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+      LEFT JOIN UserIngredients ui
+        ON ri.canonical_ingredient_id = ui.canonical_id
+      GROUP BY r.id, r.title
+    )
+    SELECT *, 
+      total_ingredients - matched AS missing_count
+    FROM RecipeCoverage
+    WHERE coverage >= ${threshold}
+    ORDER BY coverage DESC, total_ingredients ASC
+  `</span>;
+  <span class="keyword">return</span> result.recordset;
+}</pre>
+    </div>
+    <div class="code-block laravel">
+      <div class="code-block-header"><span class="dot"></span> Laravel + Eloquent</div>
+      <pre><span class="comment">// app/Services/RecipeMatchService.php</span>
+<span class="keyword">class</span> <span class="type">RecipeMatchService</span>
+{
+    <span class="keyword">public function</span> <span class="func">findCookable</span>(
+      <span class="type">User</span> $user, <span class="type">float</span> $threshold = 0.8
+    ): Collection {
+        $userIngredientIds = $user
+            -><span class="func">inventory</span>()
+            -><span class="func">where</span>(<span class="string">'quantity'</span>, <span class="string">'>'</span>, 0)
+            -><span class="func">pluck</span>(<span class="string">'canonical_ingredient_id'</span>);
+
+        <span class="keyword">return</span> <span class="type">Recipe</span>::<span class="func">withCount</span>([
+            <span class="string">'ingredients'</span>,
+            <span class="string">'ingredients as matched_count'</span> => <span class="keyword">fn</span>($q) =>
+                $q-><span class="func">whereIn</span>(
+                  <span class="string">'canonical_ingredient_id'</span>,
+                  $userIngredientIds
+                )
+        ])
+        -><span class="func">get</span>()
+        -><span class="func">map</span>(<span class="keyword">fn</span>($r) => $r-><span class="func">setAttribute</span>(
+            <span class="string">'coverage'</span>,
+            $r->matched_count / $r->ingredients_count
+        ))
+        -><span class="func">where</span>(<span class="string">'coverage'</span>, <span class="string">'>='</span>, $threshold)
+        -><span class="func">sortByDesc</span>(<span class="string">'coverage'</span>);
+    }
+}
+
+<span class="comment">// ✅ More readable
+// ⚠️ N+1 risk without careful eager loading
+// ⚠️ Coverage calc in PHP, not SQL — less
+//    efficient at scale</span></pre>
+    </div>
+  </div>
+
+  <h3 style="color:var(--accent-amber); font-family:'JetBrains Mono',monospace; font-size:0.85rem; margin-bottom:1rem; text-transform:uppercase; letter-spacing:0.08em;">Pattern 3: Real-Time Inventory Sync (Household)</h3>
+
+  <div class="code-comparison">
+    <div class="code-block node">
+      <div class="code-block-header"><span class="dot"></span> Node.js + Socket.io</div>
+      <pre><span class="comment">// server.js — same process, same port</span>
+<span class="keyword">import</span> { Server } <span class="keyword">from</span> <span class="string">'socket.io'</span>;
+
+<span class="keyword">const</span> io = <span class="keyword">new</span> <span class="type">Server</span>(httpServer, {
+  cors: { origin: <span class="string">'http://localhost:5173'</span> }
+});
+
+io.<span class="func">on</span>(<span class="string">'connection'</span>, (socket) => {
+  <span class="keyword">const</span> householdId = socket.handshake.auth.householdId;
+  socket.<span class="func">join</span>(<span class="string">`household:${householdId}`</span>);
+});
+
+<span class="comment">// In your inventory route, after DB update:</span>
+<span class="keyword">async function</span> <span class="func">updateInventory</span>(req, res) {
+  <span class="keyword">const</span> item = <span class="keyword">await</span> <span class="func">saveToDb</span>(req.body);
+
+  <span class="comment">// Broadcast to all household members instantly</span>
+  io.<span class="func">to</span>(<span class="string">`household:${req.user.householdId}`</span>)
+    .<span class="func">emit</span>(<span class="string">'inventory:updated'</span>, item);
+
+  res.<span class="func">json</span>(item);
+}
+
+<span class="comment">// ✅ Zero additional infrastructure
+// ✅ Same process = no serialization overhead
+// ✅ Handles 10K+ connections per process</span></pre>
+    </div>
+    <div class="code-block laravel">
+      <div class="code-block-header"><span class="dot"></span> Laravel + Reverb</div>
+      <pre><span class="comment">// app/Events/InventoryUpdated.php</span>
+<span class="keyword">class</span> <span class="type">InventoryUpdated</span> <span class="keyword">implements</span> <span class="type">ShouldBroadcast</span>
+{
+    <span class="keyword">use</span> Dispatchable, InteractsWithSockets;
+
+    <span class="keyword">public function</span> <span class="func">__construct</span>(
+        <span class="keyword">public</span> <span class="type">InventoryItem</span> $item
+    ) {}
+
+    <span class="keyword">public function</span> <span class="func">broadcastOn</span>(): Channel
+    {
+        <span class="keyword">return new</span> <span class="type">PrivateChannel</span>(
+            <span class="string">"household.{$this->item->household_id}"</span>
+        );
+    }
+}
+
+<span class="comment">// In controller:</span>
+<span class="type">InventoryUpdated</span>::<span class="func">dispatch</span>($item);
+
+<span class="comment">// ⚠️ Requires separate Reverb server process
+// ⚠️ php artisan reverb:start (port 8080)
+// ⚠️ Additional WebSocket infrastructure
+// ⚠️ Event serialization adds latency
+// ✅ Clean event-driven architecture</span></pre>
+    </div>
+  </div>
+
+  <!-- SECTION 3: DECISION SCENARIOS -->
+  <h2 class="section-header">
+    <span>Section 03</span>
+    Decision Framework: Which Matters More to You?
+  </h2>
+
+  <div class="scenario">
+    <h4><span class="emoji">🎯</span> Scenario A: "I want to ship the MVP fastest"</h4>
+    <div class="point">
+      <div class="label">Winner</div>
+      <div><strong style="color:var(--laravel-red)">Laravel</strong> — Auth, queues, validation, mail, notifications, file storage, rate limiting, and testing are all pre-configured. You'd build API endpoints 40-50% faster with FormRequests, API Resources, and route model binding.</div>
+    </div>
+    <div class="point">
+      <div class="label">But...</div>
+      <div>You already know the Node.js pattern from OilDri. The "learning curve" cost of Laravel may offset the "batteries included" advantage. If you're building with Claude's help, Claude writes both stacks equally well.</div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h4><span class="emoji">🤖</span> Scenario B: "AI is the killer feature — it must work flawlessly"</h4>
+    <div class="point">
+      <div class="label">Winner</div>
+      <div><strong style="color:var(--node-green)">Node.js</strong> — Recipe parsing, ingredient normalization, receipt OCR, RAG retrieval, and streaming AI responses are ALL async I/O operations. Node handles these natively. Laravel needs queues + WebSockets + polling for the same user experience.</div>
+    </div>
+    <div class="point">
+      <div class="label">Impact</div>
+      <div>Your architecture docs identify AI as the <strong>"single most transformative"</strong> decision. If the Recipe Clipper feels sluggish because results are queued rather than streamed, users churn. The Gemini analysis explicitly states: <em>"The modern user expects magic, not work."</em></div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h4><span class="emoji">👥</span> Scenario C: "I'll hire a dev team within 6 months"</h4>
+    <div class="point">
+      <div class="label">Winner</div>
+      <div><strong style="color:var(--laravel-red)">Laravel</strong> — Standardized project structure means any Laravel dev can jump in. The existing Solution Design + Implementation Plan docs are written FOR Laravel. The ecosystem (Forge, Vapor, Envoyer) simplifies DevOps.</div>
+    </div>
+    <div class="point">
+      <div class="label">But...</div>
+      <div>Node.js developers are equally abundant, and modern frameworks like NestJS provide Laravel-like structure. Your existing documentation's <em>architectural patterns</em> transfer directly — Repository, Service Layer, domain separation are stack-agnostic.</div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h4><span class="emoji">💰</span> Scenario D: "Cost is king — I need to keep hosting under $200/mo"</h4>
+    <div class="point">
+      <div class="label">Winner</div>
+      <div><strong style="color:var(--node-green)">Node.js</strong> — A single $20/mo VPS (4GB RAM) runs: Node API + Socket.io + React static files + PM2 cluster (4 workers). For Laravel, the same VPS runs PHP-FPM + Reverb + Horizon + Redis — tighter fit, less headroom.</div>
+    </div>
+    <div class="point">
+      <div class="label">Numbers</div>
+      <div>At 10K DAU: Node.js cluster uses ~500MB RAM for 4 workers handling 2000 req/sec. Laravel PHP-FPM uses ~2GB RAM for 20 workers handling 800 req/sec (without Octane). With Octane/Swoole, Laravel closes the gap but adds operational complexity.</div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <h4><span class="emoji">🗄️</span> Scenario E: "SQL Server Express is my database for now"</h4>
+    <div class="point">
+      <div class="label">Winner</div>
+      <div><strong style="color:var(--node-green)">Node.js</strong> — The <code>mssql</code> package is maintained by the Tediousjs team (Microsoft ecosystem). Connection pooling, prepared statements, streaming results, bulk inserts — all first-class. You used this pattern successfully in OilDri.</div>
+    </div>
+    <div class="point">
+      <div class="label">Risk</div>
+      <div>Laravel's <code>sqlsrv</code> driver works but isn't the primary test target. Community packages (Scout, Spatie, etc.) may have edge-case SQL Server incompatibilities. You'd spend more time debugging framework vs. database interactions.</div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: RISK ANALYSIS -->
+  <h2 class="section-header">
+    <span>Section 04</span>
+    Risk Assessment: What Could Go Wrong?
+  </h2>
+
+  <h3 style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--node-green); margin-bottom:1rem;">If You Choose Node.js</h3>
+
+  <div class="verdict-card">
+    <div class="risk-item">
+      <span class="risk-severity medium">Medium</span>
+      <div><strong>No built-in structure.</strong> Without discipline, Node.js projects become spaghetti. You need to enforce Repository + Service layer patterns manually.</div>
+      <span class="risk-mitigation">Mitigation: Use project scaffolding template with enforced folder structure</span>
+    </div>
+    <div class="risk-item">
+      <span class="risk-severity medium">Medium</span>
+      <div><strong>Auth is DIY.</strong> Passport.js works but requires manual session/cookie/CSRF setup. JWT refresh token logic is tricky to get right.</div>
+      <span class="risk-mitigation">Mitigation: Reuse proven OilDri auth pattern; add refresh tokens</span>
+    </div>
+    <div class="risk-item">
+      <span class="risk-severity low">Low</span>
+      <div><strong>Existing docs assume Laravel.</strong> The Solution Design and Implementation Plan reference Eloquent, Sanctum, Horizon. You'd need to mentally translate.</div>
+      <span class="risk-mitigation">Mitigation: Patterns are stack-agnostic; we create Node-specific docs</span>
+    </div>
+    <div class="risk-item">
+      <span class="risk-severity low">Low</span>
+      <div><strong>Hiring pool perception.</strong> Some enterprise teams default to PHP/Laravel for food-tech. May need to justify Node choice to investors or future CTOs.</div>
+      <span class="risk-mitigation">Mitigation: Node.js dominates AI-integrated apps; easy to defend</span>
+    </div>
+  </div>
+
+  <h3 style="font-family:'JetBrains Mono',monospace; font-size:0.85rem; color:var(--laravel-red); margin-bottom:1rem;">If You Choose Laravel</h3>
+
+  <div class="verdict-card">
+    <div class="risk-item">
+      <span class="risk-severity high">High</span>
+      <div><strong>AI streaming is clunky.</strong> PHP's synchronous nature means AI responses either block workers (bad) or require queue+WebSocket infrastructure (complex). This directly impacts the Recipe Clipper — FoodGenie's most differentiating feature.</div>
+      <span class="risk-mitigation">Mitigation: Use Octane + async fiber support (experimental)</span>
+    </div>
+    <div class="risk-item">
+      <span class="risk-severity medium">Medium</span>
+      <div><strong>SQL Server is second-class.</strong> Laravel's migration system, model factories, and testing helpers primarily target MySQL/PostgreSQL. You'll hit undocumented edge cases.</div>
+      <span class="risk-mitigation">Mitigation: Migrate to PostgreSQL sooner; accept friction during dev</span>
+    </div>
+    <div class="risk-item">
+      <span class="risk-severity medium">Medium</span>
+      <div><strong>Learning curve for you.</strong> Laravel is powerful but opinionated. Artisan commands, Eloquent relationships, service providers, facades — it's a framework you need to learn, not just a library you use.</div>
+      <span class="risk-mitigation">Mitigation: Claude knows Laravel deeply; pair-program through it</span>
+    </div>
+    <div class="risk-item">
+      <span class="risk-severity low">Low</span>
+      <div><strong>Infrastructure complexity.</strong> Running PHP-FPM + Horizon + Reverb + Redis requires more moving parts than a single Node.js process.</div>
+      <span class="risk-mitigation">Mitigation: Docker Compose manages it locally; Laravel Forge for prod</span>
+    </div>
+  </div>
+
+  <!-- SECTION 5: RECOMMENDATION -->
+  <h2 class="section-header">
+    <span>Section 05</span>
+    The Recommendation
+  </h2>
+
+  <div class="recommendation">
+    <h3>Node.js + Express + React + SQL Server Express</h3>
+    <p>Based on the weight of FoodGenie's <strong>AI-first architecture</strong>, your <strong>proven experience with the Node.js stack</strong>, the <strong>SQL Server Express constraint</strong>, and the <strong>cost sensitivity</strong> of bootstrapping — Node.js is the stronger fit for the MVP phase.</p>
+    <p>The critical insight: <strong>FoodGenie is not a CRUD app with some AI sprinkled on top.</strong> It's an AI-powered platform that happens to have CRUD operations. The Recipe Clipper, Receipt Scanner, Ingredient Normalizer, and Smart Search are the features that differentiate FoodGenie from every recipe website. These features demand native async processing and real-time streaming — Node.js's core strengths.</p>
+    <p>The Laravel ecosystem advantages (Sanctum, Horizon, Scout) are genuinely valuable, but they solve problems you can solve with well-chosen Node packages. The AI streaming limitation in Laravel, however, requires fundamental workarounds that add complexity and degrade user experience. That's the asymmetry that tips the scale.</p>
+    <p style="color:var(--text); margin-top:1rem;"><strong>The proposed stack:</strong></p>
+    <table style="width:100%; margin-top:0.5rem; font-size:0.9rem;">
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.5rem 0; color:var(--text-dim); width:160px; font-family:'JetBrains Mono',monospace; font-size:0.8rem;">Runtime</td>
+        <td style="padding:0.5rem 0;">Node.js 20 LTS + Express 4.x</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.5rem 0; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">Frontend</td>
+        <td style="padding:0.5rem 0;">React 18 + Vite + Tailwind CSS</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.5rem 0; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">Database (Dev)</td>
+        <td style="padding:0.5rem 0;">SQL Server Express (local) → PostgreSQL (production)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.5rem 0; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">ORM / Query</td>
+        <td style="padding:0.5rem 0;">Knex.js (query builder) — supports both SQL Server and PostgreSQL with same API</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.5rem 0; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">Auth</td>
+        <td style="padding:0.5rem 0;">Passport.js + express-session (cookies) or JWT</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.5rem 0; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">Real-time</td>
+        <td style="padding:0.5rem 0;">Socket.io (same process)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.5rem 0; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">Job Queue</td>
+        <td style="padding:0.5rem 0;">BullMQ + Redis</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.5rem 0; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">Search</td>
+        <td style="padding:0.5rem 0;">Meilisearch (typo-tolerant ingredient/recipe search)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:0.5rem 0; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">AI Integration</td>
+        <td style="padding:0.5rem 0;">Anthropic SDK + OpenAI SDK (direct, with streaming)</td>
+      </tr>
+      <tr>
+        <td style="padding:0.5rem 0; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.8rem;">Process Manager</td>
+        <td style="padding:0.5rem 0;">PM2 (dev & production)</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- SECTION 6: WHAT IF LARAVEL? -->
+  <h2 class="section-header">
+    <span>Section 06</span>
+    The Counter-Argument: When Laravel Wins
+  </h2>
+
+  <div class="verdict-card">
+    <h3>Choose Laravel if any of these are true:</h3>
+    <p><strong>1. You plan to hire a PHP/Laravel team within 3 months.</strong> The existing Solution Design, Implementation Plan, and Technical Reference docs are written FOR Laravel. Hiring a Laravel team and handing them these docs means they can start coding immediately. With Node.js, you'd need to translate those docs.</p>
+    <p><strong>2. You want the absolute fastest path to a working CRUD layer.</strong> If you view the MVP as "get recipes and users into a database with a nice UI" and treat AI features as Phase 2, Laravel gets you there faster with less boilerplate decisions.</p>
+    <p><strong>3. Your partner's AWS expertise centers on PHP deployment.</strong> If your AWS partner has deep experience with Elastic Beanstalk for PHP or Laravel Vapor on Lambda, that operational expertise has real value.</p>
+    <p><strong>4. You're uncomfortable with the "assemble your own framework" nature of Node.js.</strong> Laravel's opinionated structure removes decisions. If you want guardrails rather than freedom, Laravel provides them.</p>
+  </div>
+
+  <div class="doc-footer">
+    <p>FoodGenie Stack Decision Document — Generated February 21, 2026</p>
+    <p style="margin-top:0.5rem;">This analysis is based on FoodGenie's Solution Design, Implementation Plan, Gemini Analysis, Claude Architecture Blueprint, and the FoodGenie Overview requirements document.</p>
+  </div>
+
+</div>
+
+</body>
+</html>
