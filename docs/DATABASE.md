@@ -1,8 +1,8 @@
 # FoodGenie — Database Schema Documentation
 
-**Version:** 1.0  
-**Last Updated:** 2026-02-21  
-**DDL Script:** `database/ddl/v1.0_full_ddl.sql`  
+**Version:** 1.1  
+**Last Updated:** 2026-02-22  
+**DDL Script:** `database/ddl/v1.1_full_ddl.sql`  
 
 ---
 
@@ -10,9 +10,9 @@
 
 FoodGenie uses SQL Server Express for local development and PostgreSQL for production. Knex.js abstracts the dialect differences. All DDL scripts are written in SQL Server syntax. Migration scripts for schema changes are stored in `database/migrations/` and should be run in SQL Server Management Studio (SSMS) or sqlcmd.
 
-## Schema Version: 1.0
+## Schema Version: 1.1
 
-**Tables: 22** across 8 domain areas.
+**Tables: 23** across 8 domain areas (+ `schema_version` tracking table).
 
 ## Entity Relationship Summary
 
@@ -46,11 +46,14 @@ ingredients ──┬── food_categories (self-referencing hierarchy)
 
 | Table | Purpose | Key Columns |
 |-------|---------|-------------|
-| `users` | Core identity | username, email, password_hash, role, household_id |
-| `user_sessions` | Express session store | sid, sess (JSON), expired |
+| `users` | Core identity | username, email, password_hash, first_name, last_name, display_name, avatar_url, bio, location, role, household_id, failed_login_count, locked_until |
+| `user_sessions` | Express session store (connect-mssql-v2) | sid, sess (JSON), expired |
 | `user_oauth` | OAuth provider links (Phase 2) | user_id, provider, provider_id |
+| `password_reset_tokens` | Password reset flow (REQ-001.9) | user_id, token (unique, hashed), expires_at, is_used, used_at |
 
 **Roles:** user (default), contributor (can edit wiki), vendor (brand management), admin (full access)
+
+**Password reset:** Tokens expire after 1 hour. `is_used = 1` after consumption — single-use only. Cascade-deletes when user is deleted.
 
 ### Domain 2: Households
 
@@ -128,12 +131,19 @@ All foreign keys are indexed. Additional indexes on:
 
 When schema changes are needed:
 
-1. Create a migration script: `database/migrations/v1.0_to_v1.1_description.sql`
-2. Include both the ALTER statements and a rollback section (commented)
-3. Update the `schema_version` table
+1. Create a migration script: `database/migrations/vX.Y_to_vX.Z_description.sql`
+2. Include both the forward migration and a rollback section (commented)
+3. Update the `schema_version` table inside the migration
 4. Update `database/ddl/` with a new full DDL reflecting all changes
 5. Update this document
-6. Commit both the migration and updated DDL to git
+6. Commit all three files together
+
+**Migration History:**
+
+| Version | Description | Date |
+|---------|-------------|------|
+| 1.0 | Initial normalized schema — 22 tables, 8 domains | 2026-02-22 |
+| 1.1 | Add `password_reset_tokens` (REQ-001.9) | 2026-02-22 |
 
 ## Connection Configuration
 
@@ -143,7 +153,7 @@ See `.env.example` for connection parameters. Key settings for SQL Server Expres
 DB_CLIENT=mssql
 DB_HOST=localhost
 DB_PORT=1433
-DB_NAME=FoodGenie
+DB_NAME=FoodGenieGemini
 DB_INSTANCE=SQLEXPRESS
 DB_TRUSTED=false
 DB_USER=sa

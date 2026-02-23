@@ -2,13 +2,13 @@
 // API Route Mounting
 // ============================================
 
-import { Router } from 'express';
+import { Router, type IRouter } from 'express';
 
-export const apiRoutes = Router();
+export const apiRoutes: IRouter = Router();
 
 // Sprint 1.1: Auth routes
-// import authRoutes from './auth.js';
-// apiRoutes.use('/auth', authRoutes);
+import authRoutes from './auth.js';
+apiRoutes.use('/auth', authRoutes);
 
 // Sprint 1.2: Household routes
 // apiRoutes.use('/households', householdRoutes);

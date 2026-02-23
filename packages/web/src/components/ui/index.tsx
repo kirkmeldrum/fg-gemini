@@ -1,7 +1,8 @@
 
 
 import React from 'react';
-import { LucideIcon, Menu, Home, Utensils, Calendar, ShoppingCart, Users, UserCircle, Search, Plus, X, Check, BookOpen, Scan, Camera } from 'lucide-react';
+import { LucideIcon, Menu, Home, Utensils, Calendar, ShoppingCart, Users, Search, X, Check, BookOpen, Scan, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 // --- UI Primitives ---
 
@@ -50,14 +51,14 @@ export const Label = ({ children, className = "", htmlFor }: { children?: React.
 );
 
 export const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
-  <input 
+  <input
     className={`w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow ${className}`}
     {...props}
   />
 );
 
 export const TextArea = ({ className = "", ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-  <textarea 
+  <textarea
     className={`w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-shadow ${className}`}
     {...props}
   />
@@ -66,9 +67,8 @@ export const TextArea = ({ className = "", ...props }: React.TextareaHTMLAttribu
 // New: Checkbox Component
 export const Checkbox = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (checked: boolean) => void }) => (
   <label className="flex items-center gap-2 cursor-pointer group">
-    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-      checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white group-hover:border-emerald-300'
-    }`}>
+    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white group-hover:border-emerald-300'
+      }`}>
       {checked && <Check size={12} strokeWidth={3} />}
     </div>
     <span className={`text-sm ${checked ? 'text-slate-900 font-medium' : 'text-slate-600'}`}>{label}</span>
@@ -83,11 +83,11 @@ export const RangeInput = ({ label, value, min, max, unit, onChange }: { label: 
       <Label className="mb-0">{label}</Label>
       <span className="text-sm font-medium text-emerald-600">{value} {unit}</span>
     </div>
-    <input 
-      type="range" 
-      min={min} 
-      max={max} 
-      value={value} 
+    <input
+      type="range"
+      min={min}
+      max={max}
+      value={value}
       onChange={e => onChange(parseInt(e.target.value))}
       className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
     />
@@ -114,15 +114,15 @@ export const Modal = ({ isOpen, onClose, title, children }: any) => {
 };
 
 export const FacebookIcon = ({ size = 20, className = "" }: { size?: number, className?: string }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
     className={className}
     xmlns="http://www.w3.org/2000/svg"
   >
-    <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+    <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
   </svg>
 );
 
@@ -138,7 +138,8 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: { icon: LucideIcon,
   </button>
 );
 
-export const Layout = ({ children, currentView, onViewChange }: any) => {
+export const Layout = ({ children, currentView, onViewChange, onLogout }: any) => {
+  const { user } = useAuth();
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
       {/* Sidebar */}
@@ -153,7 +154,7 @@ export const Layout = ({ children, currentView, onViewChange }: any) => {
             </span>
           </div>
         </div>
-        
+
         <nav className="flex-1 p-4 space-y-1">
           <SidebarItem icon={Home} label="Dashboard" active={currentView === 'dashboard'} onClick={() => onViewChange('dashboard')} />
           <SidebarItem icon={Utensils} label="My Kitchen" active={currentView === 'kitchen'} onClick={() => onViewChange('kitchen')} />
@@ -162,33 +163,44 @@ export const Layout = ({ children, currentView, onViewChange }: any) => {
           <SidebarItem icon={ShoppingCart} label="Shopping List" active={currentView === 'shopping'} onClick={() => onViewChange('shopping')} />
           <SidebarItem icon={Users} label="Social Network" active={currentView === 'social'} onClick={() => onViewChange('social')} />
           <SidebarItem icon={BookOpen} label="Food Encyclopedia" active={currentView === 'encyclopedia'} onClick={() => onViewChange('encyclopedia')} />
-          
+
           <div className="pt-4 mt-4 border-t border-slate-100">
-             <SidebarItem icon={Scan} label="Smart Scan" active={currentView === 'smart-scan'} onClick={() => onViewChange('smart-scan')} />
+            <SidebarItem icon={Scan} label="Smart Scan" active={currentView === 'smart-scan'} onClick={() => onViewChange('smart-scan')} />
           </div>
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
-          <button 
+        <div className="p-4 border-t border-slate-100 space-y-1">
+          <button
             onClick={() => onViewChange('profile')}
             className={`flex items-center gap-3 w-full p-2 rounded-lg transition-colors ${currentView === 'profile' ? 'bg-emerald-50' : 'hover:bg-slate-50'}`}
           >
-            <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
-                <img src="https://i.pravatar.cc/150?u=a042581f4e29026024d" alt="User" />
+            <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
+              {user?.avatarUrl
+                ? <img src={user.avatarUrl} alt={user.firstName} className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs font-bold bg-emerald-100 text-emerald-700">{user?.firstName?.[0]}{user?.lastName?.[0]}</div>
+              }
             </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-slate-700">Julia Wysocki</p>
-              <p className="text-xs text-slate-500">Premium Member</p>
+            <div className="text-left min-w-0">
+              <p className="text-sm font-medium text-slate-700 truncate">{user ? `${user.firstName} ${user.lastName}` : '…'}</p>
+              <p className="text-xs text-slate-500 capitalize">{user?.role ?? 'user'}</p>
             </div>
           </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-3 w-full px-2 py-1.5 rounded-lg text-sm text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut size={16} /> Sign out
+            </button>
+          )}
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 md:ml-64 mb-16 md:mb-0">
         <header className="bg-white border-b border-slate-200 sticky top-0 z-20 px-6 py-4 flex justify-between items-center md:hidden">
-           <div className="font-bold text-emerald-600">FoodGenie</div>
-           <Button variant="ghost" className="p-1"><Menu size={24}/></Button>
+          <div className="font-bold text-emerald-600">FoodGenie</div>
+          <Button variant="ghost" className="p-1"><Menu size={24} /></Button>
         </header>
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           {children}
@@ -198,21 +210,21 @@ export const Layout = ({ children, currentView, onViewChange }: any) => {
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-2 z-50">
         <button onClick={() => onViewChange('dashboard')} className={`p-2 flex flex-col items-center text-xs ${currentView === 'dashboard' ? 'text-emerald-600' : 'text-slate-400'}`}>
-            <Home size={20} /> Home
+          <Home size={20} /> Home
         </button>
         <button onClick={() => onViewChange('kitchen')} className={`p-2 flex flex-col items-center text-xs ${currentView === 'kitchen' ? 'text-emerald-600' : 'text-slate-400'}`}>
-            <Utensils size={20} /> Kitchen
+          <Utensils size={20} /> Kitchen
         </button>
         <button onClick={() => onViewChange('smart-scan')} className="p-2 -mt-8 flex flex-col items-center">
-            <div className="w-14 h-14 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-600/30 border-4 border-slate-50">
-                <Scan size={24} />
-            </div>
+          <div className="w-14 h-14 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-600/30 border-4 border-slate-50">
+            <Scan size={24} />
+          </div>
         </button>
         <button onClick={() => onViewChange('recipes')} className={`p-2 flex flex-col items-center text-xs ${currentView === 'recipes' ? 'text-emerald-600' : 'text-slate-400'}`}>
-            <Search size={20} /> Recipes
+          <Search size={20} /> Recipes
         </button>
         <button onClick={() => onViewChange('profile')} className={`p-2 flex flex-col items-center text-xs ${currentView === 'profile' ? 'text-emerald-600' : 'text-slate-400'}`}>
-            <Users size={20} /> Profile
+          <Users size={20} /> Profile
         </button>
       </div>
     </div>

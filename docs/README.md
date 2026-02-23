@@ -19,9 +19,11 @@ cp .env.example .env
 # Then run: database/ddl/v1.0_full_ddl.sql
 
 # Start development
-pnpm dev          # API (:3001) + Web (:5173)
-pnpm dev:api      # API only
-pnpm dev:web      # Web only
+pnpm dev          # API (:3002) + Web (:5174)
+pnpm dev:api      # API only   → http://localhost:3002
+pnpm dev:web      # Web only   → http://localhost:5174
+
+# Note: ports 3001 and 5173 are reserved for another app on this machine.
 ```
 
 ## Stack

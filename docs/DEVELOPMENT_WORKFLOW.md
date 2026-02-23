@@ -155,9 +155,11 @@ cp .env.example .env
 # In SSMS: Run database/seeds/*.sql in order
 
 # 6. Start development servers
-pnpm dev        # Starts both API (:3001) and Web (:5173)
-pnpm dev:api    # API only
-pnpm dev:web    # Web only
+pnpm dev        # Starts both API (:3002) and Web (:5174)
+pnpm dev:api    # API only  → http://localhost:3002
+pnpm dev:web    # Web only  → http://localhost:5174
+
+# Note: ports 3001 and 5173 are reserved for another application on this machine.
 ```
 
 ---

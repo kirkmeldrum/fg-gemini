@@ -1,7 +1,7 @@
 # FoodGenie — API Reference
 
 **Version:** 1.0  
-**Base URL:** `http://localhost:3001/api`  
+**Base URL:** `http://localhost:3002/api`  
 **Last Updated:** 2026-02-21  
 
 ---
@@ -61,8 +61,12 @@ Paginated endpoints accept `?page=1&limit=20` query params. Response includes `m
 | POST | `/api/auth/login` | — | Authenticate and create session |
 | POST | `/api/auth/logout` | 🔒 | Destroy session |
 | GET | `/api/auth/me` | 🔒 | Get current user profile |
-| PATCH | `/api/auth/me` | 🔒 | Update profile (name, bio, location, avatar) |
-| PATCH | `/api/auth/password` | 🔒 | Change password |
+| PATCH | `/api/auth/me` | 🔒 | Update profile (displayName, bio, location) |
+| POST | `/api/auth/me/avatar` | 🔒 | Upload profile avatar (JPG/PNG/WebP, max 2MB) |
+| PATCH | `/api/auth/password` | 🔒 | Change password (requires current password) |
+| POST | `/api/auth/forgot-password` | — | Request password reset email |
+| POST | `/api/auth/reset-password` | — | Complete password reset with token |
+| DELETE | `/api/auth/me` | 🔒 | Soft-delete account (30-day retention) |
 | GET | `/api/auth/preferences` | 🔒 | Get dietary preferences |
 | PUT | `/api/auth/preferences` | 🔒 | Set dietary preferences |
 
@@ -88,6 +92,50 @@ Paginated endpoints accept `?page=1&limit=20` query params. Response includes `m
 ```
 
 **Response:** `{ "success": true, "data": { "user": { ... } } }` + Set-Cookie header
+
+### POST /api/auth/me/avatar
+
+**Request:** `multipart/form-data`, field name: `avatar`  
+**Constraints:** JPG, PNG, or WebP only; max 2MB; auto-resized to 200×200px  
+**Response:** `{ "success": true, "data": { "user": { "avatarUrl": "https://..." } } }`
+
+### PATCH /api/auth/password
+
+```json
+{
+  "currentPassword": "OldPass1",
+  "newPassword": "NewPass1"
+}
+```
+
+**Error:** `{ "error": { "code": "WRONG_PASSWORD" } }` if current password is incorrect.
+
+### POST /api/auth/forgot-password
+
+```json
+{ "email": "kirk@example.com" }
+```
+
+**Response:** Always `{ "success": true }` — never reveals whether the email exists (prevents enumeration).  
+**Side effect:** If account exists, sends email with a 1-hour time-limited reset link.
+
+### POST /api/auth/reset-password
+
+```json
+{
+  "token": "abc123...",
+  "password": "NewPass1"
+}
+```
+
+**Error:** `{ "error": { "code": "TOKEN_EXPIRED" } }` if the link has expired or been used.  
+**Success:** `{ "success": true }` — redirect to `/login` with success message.
+
+### DELETE /api/auth/me
+
+**Request:** No body — authenticated via session cookie.  
+**Response:** `{ "success": true }` — session destroyed, account soft-deleted (`is_deleted = 1`).  
+**Note:** Account data retained 30 days for recovery, then hard-deleted.
 
 ---
 
@@ -125,12 +173,12 @@ Paginated endpoints accept `?page=1&limit=20` query params. Response includes `m
 |--------|------|------|-------------|
 | GET | `/api/ingredients` | — | List/search ingredients |
 | GET | `/api/ingredients/:id` | — | Get ingredient detail |
-| GET | `/api/ingredients/autocomplete` | — | Autocomplete search |
+| GET | `/api/ingredients/search` | — | Ingredient search with autocomplete |
 | GET | `/api/ingredients/categories` | — | Get food category tree |
 | POST | `/api/ingredients` | 🔑 admin | Create ingredient |
 | PATCH | `/api/ingredients/:id` | 🔑 admin | Update ingredient |
 
-### GET /api/ingredients/autocomplete?q=chic
+### GET /api/ingredients/search?q=chic
 
 ```json
 {

@@ -12,7 +12,11 @@ declare global {
             id: number;
             email: string;
             username: string;
-            role: 'user' | 'admin';
+            firstName: string;
+            lastName: string;
+            displayName: string | null;
+            avatarUrl: string | null;
+            role: 'user' | 'contributor' | 'vendor' | 'admin';
         }
     }
 }
@@ -42,5 +46,4 @@ export function requireRole(...roles: string[]) {
     };
 }
 
-// TODO: Sprint 1.1 — Passport.js local strategy configuration
-// export function configurePassport() { ... }
+

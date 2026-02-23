@@ -1,63 +1,84 @@
-import { Routes, Route } from 'react-router-dom';
+import { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Layout } from './components/ui';
+import MyKitchen from './pages/MyKitchenPage';
+import Recipes from './pages/RecipesPage';
+import RecipeDetail from './pages/RecipeDetailPage';
+import MealPlanner from './pages/MealPlannerPage';
+import ShoppingList from './pages/ShoppingListPage';
+import SocialNetwork from './pages/SocialNetworkPage';
+import AddRecipe from './pages/AddRecipePage';
+import FoodEncyclopedia from './pages/FoodEncyclopediaPage';
+import Profile from './pages/ProfilePage';
+import Auth from './pages/AuthPage';
+import SmartScanner from './pages/SmartScannerPage';
+import RecipeIndexer from './pages/RecipeIndexerPage';
+import DashboardPage from './pages/DashboardPage';
 
-// ---- Placeholder Home Page ----
-function Home() {
-    return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-8">
-            <div className="text-center max-w-2xl">
-                <h1 className="text-5xl mb-4 text-primary-700">🍳 FoodGenie</h1>
-                <p className="text-xl text-gray-600 mb-8">
-                    Your AI-powered kitchen companion
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                    {[
-                        { icon: '🔍', label: 'Smart Search', desc: 'Find recipes by ingredients' },
-                        { icon: '📋', label: 'My Kitchen', desc: 'Track your inventory' },
-                        { icon: '📅', label: 'Meal Planner', desc: 'Plan your week' },
-                        { icon: '🛒', label: 'Shopping List', desc: 'Never forget an item' },
-                        { icon: '🤖', label: 'Recipe Clipper', desc: 'AI-powered parsing' },
-                        { icon: '⚖️', label: 'Smart Scale', desc: 'BLE connected (coming)' },
-                    ].map(({ icon, label, desc }) => (
-                        <div
-                            key={label}
-                            className="bg-white rounded-lg border border-gray-200 p-4 hover:border-primary-400 hover:shadow-md transition-all"
-                        >
-                            <div className="text-2xl mb-2">{icon}</div>
-                            <div className="font-semibold text-gray-900">{label}</div>
-                            <div className="text-gray-500 text-xs mt-1">{desc}</div>
-                        </div>
-                    ))}
-                </div>
-                <div className="mt-10 p-4 bg-primary-50 border border-primary-200 rounded-lg text-sm text-primary-800">
-                    <strong>Status:</strong> Monorepo bootstrapped. API on :3001, Web on :5173.
-                    <br />
-                    Next sprint: Authentication + User registration (Sprint 1.1).
+// ─── Inner app (has access to AuthContext) ───────────────────────────────────
+function AppInner() {
+    const { user, isLoading, logout } = useAuth();
+    const [currentView, setCurrentView] = useState('dashboard');
+    const [routeParams, setRouteParams] = useState<any>({});
+
+    const navigate = (view: string, params?: any) => {
+        setCurrentView(view);
+        setRouteParams(params || {});
+    };
+
+    // Splash while checking session cookie
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="flex flex-col items-center gap-4 text-slate-500">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-lime-500 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-lg animate-pulse">
+                        F
+                    </div>
+                    <span className="text-sm">Loading…</span>
                 </div>
             </div>
-        </div>
+        );
+    }
+
+    // Not logged in — show auth page with forgot/reset support
+    if (!user) {
+        return <Auth />;
+    }
+
+    const renderView = () => {
+        switch (currentView) {
+            case 'dashboard': return <DashboardPage onChangeView={navigate} />;
+            case 'kitchen': return <MyKitchen />;
+            case 'recipes': return <Recipes onNavigate={navigate} />;
+            case 'recipe-detail': return <RecipeDetail recipeId={routeParams.id} onBack={() => navigate('recipes')} />;
+            case 'add-recipe': return <AddRecipe onBack={() => navigate('recipes')} initialData={routeParams.initialData} />;
+            case 'planner': return <MealPlanner />;
+            case 'shopping': return <ShoppingList />;
+            case 'social': return <SocialNetwork />;
+            case 'encyclopedia': return <FoodEncyclopedia initialFoodId={routeParams.id} onNavigate={navigate} />;
+            case 'profile': return <Profile />;
+            case 'smart-scan': return <SmartScanner onNavigate={navigate} />;
+            case 'recipe-indexer': return <RecipeIndexer onScanComplete={(data: any) => navigate('add-recipe', { initialData: data })} onCancel={() => navigate('recipes')} />;
+            default: return <DashboardPage onChangeView={navigate} />;
+        }
+    };
+
+    if (currentView === 'smart-scan' || currentView === 'recipe-indexer') {
+        return renderView();
+    }
+
+    return (
+        <Layout currentView={currentView} onViewChange={navigate} onLogout={logout}>
+            {renderView()}
+        </Layout>
     );
 }
 
-export default function App() {
-    return (
-        <Routes>
-            <Route path="/" element={<Home />} />
-            {/* Sprint 1.1: Auth */}
-            {/* <Route path="/login" element={<LoginPage />} /> */}
-            {/* <Route path="/register" element={<RegisterPage />} /> */}
-            {/* Sprint 1.3: Recipes */}
-            {/* <Route path="/recipes" element={<RecipesPage />} /> */}
-            {/* <Route path="/recipes/:slug" element={<RecipeDetailPage />} /> */}
-            {/* Sprint 1.5: Inventory */}
-            {/* <Route path="/kitchen" element={<MyKitchenPage />} /> */}
-            {/* Sprint 1.6: Smart Search */}
-            {/* <Route path="/search" element={<SmartSearchPage />} /> */}
-            {/* Sprint 1.7: Recipe Clipper */}
-            {/* <Route path="/clip" element={<RecipeClipperPage />} /> */}
-            {/* Sprint 1.8: Meal Planner */}
-            {/* <Route path="/planner" element={<MealPlannerPage />} /> */}
-            {/* Sprint 1.9: Shopping */}
-            {/* <Route path="/shopping" element={<ShoppingListPage />} /> */}
-        </Routes>
-    );
-}
+// ─── Root (provides AuthContext) ──────────────────────────────────────────────
+const App = () => (
+    <AuthProvider>
+        <AppInner />
+    </AuthProvider>
+);
+
+export default App;

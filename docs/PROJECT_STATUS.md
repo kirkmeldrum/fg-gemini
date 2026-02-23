@@ -1,8 +1,8 @@
 # FoodGenie — Project Status
 
-**Last Updated:** 2026-02-22 (Session 4 — Monorepo Restructuring)
-**Phase:** Phase 1 — Define (Infrastructure Complete)
-**Sprint Focus:** Complete Phase 0 setup tasks, begin Sprint 1.1
+**Last Updated:** 2026-02-22 (Session 5 — Phase 2 Wireframes REQ-001)
+**Phase:** Phase 1 — Build (Sprint 1.1 Ready)
+**Sprint Focus:** Sprint 1.1 — Authentication & Profile
 
 ---
 
@@ -19,12 +19,28 @@
 | Git Repository | 🟡 Pending | Files ready, needs `git init` + initial commit |
 | Dependencies | 🟡 Pending | Needs `pnpm install` |
 | Database Created | 🟡 Pending | Needs `CREATE DATABASE` + run DDL in SSMS |
-| Mobile (React Native) | ⬜ Phase 2 | Expo + BLE — not started |
+| Phase 2 Wireframes (REQ-001) | ✅ Complete | 6 wireframe docs in `docs/wireframes/` |
 | Deployment | ⬜ Phase 3 | AWS — not started |
 
 ---
 
 ## Current Phase: Phase 1 — Define
+
+### Session 5 Summary (2026-02-22)
+
+**Phase 2 Wireframes (REQ-001):**
+Created 6 structured wireframe description documents for all REQ-001 pages. Updated API.md with 4 missing auth endpoints.
+
+**Wireframe docs created:**
+- `docs/wireframes/01-login.md` — `/login` (REQ-001.2, REQ-001.3)
+- `docs/wireframes/02-register.md` — `/register` (REQ-001.1)
+- `docs/wireframes/03-profile.md` — `/profile` (REQ-001.4, REQ-001.5)
+- `docs/wireframes/04-dietary-preferences.md` — `/profile/preferences` (REQ-001.8)
+- `docs/wireframes/05-forgot-password.md` — `/forgot-password` + `/reset-password` (REQ-001.9)
+- `docs/wireframes/06-account-settings.md` — `/settings` (REQ-001.6, REQ-001.10)
+
+**API.md updated:**
+Added `POST /api/auth/me/avatar`, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, `DELETE /api/auth/me`.
 
 ### Session 4 Summary (2026-02-22)
 
@@ -76,8 +92,8 @@ Comprehensive revision of REQUIREMENTS.md. Every MVP requirement group (REQ-001�
 | 3 | Create database | In SSMS: `CREATE DATABASE FoodGenieGemini;` | ⬜ |
 | 4 | Run DDL | In SSMS: Execute `database/ddl/v1.0_full_ddl.sql` | ⬜ |
 | 5 | Configure .env | Copy `.env.example` → `.env`, set DB password | ⬜ |
-| 6 | Test API server | `pnpm dev:api` → check `http://localhost:3001/health` | ⬜ |
-| 7 | Test web app | `pnpm dev:web` → check `http://localhost:5173` | ⬜ |
+| 6 | Test API server | `pnpm dev:api` → check `http://localhost:3002/health` | ⬜ |
+| 7 | Test web app | `pnpm dev:web` → check `http://localhost:5174` | ⬜ |
 | 8 | Initial commit | `git add -A && git commit -m "feat: project bootstrap with full documentation"` | ⬜ |
 | 9 | Clean up root files | Remove original .tsx/.ts/.sql files from project root (now in packages/) | ⬜ |
 
@@ -91,7 +107,7 @@ Comprehensive revision of REQUIREMENTS.md. Every MVP requirement group (REQ-001�
 | 1. Define | Are requirements complete, unambiguous, and testable? | ✅ v2.0 complete |
 | 2. Design | Do wireframes represent all requirements? | ⬜ Not started |
 | 3. Architect | Is architecture complete enough to build? | ✅ Passed |
-| 4. Build | Sprint 1.1 ready? | ⬜ After Phase 0 setup + Phase 2 wireframes for REQ-001 |
+| 4. Build | Sprint 1.1 ready? | ✅ Wireframes complete, ready to build |
 | 5. Validate | QA test plan? | ⬜ After Build |
 | 6. Deploy | Production ready? | ⬜ After Validate |
 
@@ -156,7 +172,8 @@ fg-gemini/
 │   ├── ddl/                Full DDL scripts (versioned)
 │   ├── migrations/         Incremental migration scripts
 │   └── seeds/              Seed data
-├── docs/                   Architecture, requirements, API reference
+├── docs/
+│   ├── wireframes/         Phase 2 design specs (01–06 for REQ-001)
 │   └── legacy/             Archived stale documents
 └── PROJECT_STATUS.md       This file
 ```
@@ -165,12 +182,10 @@ fg-gemini/
 
 ## Known Issues & Decisions
 
-1. **API.md needs update** — New REQ-001 endpoints (avatar, forgot password, reset, delete) not yet in API.md
 2. **DDL may need update** — password_reset_tokens table needed for REQ-001.9
-3. **Phase 2 wireframes** — Not started. Wireframe REQ-001 pages before Sprint 1.1
-4. **Meilisearch** — Not installed locally. Needed Sprint 1.3+
-5. **Root cleanup** — Original flat .tsx/.ts/.sql files still in root (copies in packages/). Remove after verifying new structure works.
-6. **Prototype imports** — Moved .tsx files still reference `./components` and `./data` — import paths need updating when prototypes are integrated into routing
+3. **Meilisearch** — Not installed locally. Needed Sprint 1.3+
+4. **Root cleanup** — Original flat .tsx/.ts/.sql files still in root (copies in packages/). Remove after verifying new structure works.
+5. **Prototype imports** — Moved .tsx files still reference `./components` and `./data` — import paths need updating when prototypes are integrated into routing
 
 ---
 

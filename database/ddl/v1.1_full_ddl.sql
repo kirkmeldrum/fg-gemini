@@ -1,12 +1,12 @@
 -- ============================================================
 -- FoodGenie Database — Full DDL
--- Version: 1.0 — Normalized Production Schema
+-- Version: 1.1 — Adds password_reset_tokens
 -- Date: 2026-02-22
 -- Author: Kirk Meldrum
 -- Target: SQL Server Express (local dev) / SQL Server (prod)
 -- ============================================================
--- NOTE: This replaces the original prototype schema.
--- Run this on a fresh FoodGenieGemini database.
+-- Changes from v1.0:
+--   + password_reset_tokens table (REQ-001.9)
 -- ============================================================
 
 USE FoodGenieGemini;
@@ -17,6 +17,7 @@ GO
 -- ============================================================
 
 IF OBJECT_ID('dbo.schema_version',              'U') IS NOT NULL DROP TABLE dbo.schema_version;
+IF OBJECT_ID('dbo.password_reset_tokens',       'U') IS NOT NULL DROP TABLE dbo.password_reset_tokens;
 IF OBJECT_ID('dbo.scale_readings',              'U') IS NOT NULL DROP TABLE dbo.scale_readings;
 IF OBJECT_ID('dbo.scale_devices',               'U') IS NOT NULL DROP TABLE dbo.scale_devices;
 IF OBJECT_ID('dbo.recipe_parse_log',            'U') IS NOT NULL DROP TABLE dbo.recipe_parse_log;
@@ -63,7 +64,7 @@ CREATE TABLE users (
     location            NVARCHAR(100)   NULL,
     role                NVARCHAR(20)    NOT NULL DEFAULT 'user'
                             CONSTRAINT CHK_users_role CHECK (role IN ('user','contributor','vendor','admin')),
-    household_id        INT             NULL,      -- FK added after households table
+    household_id        INT             NULL,
     failed_login_count  INT             NOT NULL DEFAULT 0,
     locked_until        DATETIME2       NULL,
     is_active           BIT             NOT NULL DEFAULT 1,
@@ -84,21 +85,19 @@ CREATE INDEX IX_users_is_active   ON users(is_active) WHERE is_active = 1;
 CREATE INDEX IX_users_household   ON users(household_id);
 GO
 
--- Express session store (connect-mssql-v2 compatible)
 CREATE TABLE user_sessions (
     sid     NVARCHAR(255)   NOT NULL PRIMARY KEY,
-    sess    NVARCHAR(MAX)   NOT NULL,   -- JSON session data
+    sess    NVARCHAR(MAX)   NOT NULL,
     expired DATETIME2       NOT NULL
 );
 
 CREATE INDEX IX_user_sessions_expired ON user_sessions(expired);
 GO
 
--- OAuth provider links (Phase 2)
 CREATE TABLE user_oauth (
     id              INT IDENTITY(1,1) PRIMARY KEY,
     user_id         INT             NOT NULL,
-    provider        NVARCHAR(50)    NOT NULL,   -- 'google','facebook','apple'
+    provider        NVARCHAR(50)    NOT NULL,
     provider_id     NVARCHAR(255)   NOT NULL,
     access_token    NVARCHAR(MAX)   NULL,
     refresh_token   NVARCHAR(MAX)   NULL,
@@ -110,6 +109,28 @@ CREATE TABLE user_oauth (
 );
 
 CREATE INDEX IX_user_oauth_user_id ON user_oauth(user_id);
+GO
+
+-- NEW in v1.1: Password Reset Tokens (REQ-001.9)
+CREATE TABLE password_reset_tokens (
+    id          INT IDENTITY(1,1) PRIMARY KEY,
+    user_id     INT             NOT NULL,
+    token       NVARCHAR(255)   NOT NULL,
+    expires_at  DATETIME2       NOT NULL,
+    is_used     BIT             NOT NULL DEFAULT 0,
+    used_at     DATETIME2       NULL,
+    created_at  DATETIME2       NOT NULL DEFAULT GETDATE(),
+    updated_at  DATETIME2       NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_password_reset_tokens_user    FOREIGN KEY (user_id)   REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT UQ_password_reset_tokens_token   UNIQUE (token)
+);
+
+CREATE INDEX IX_password_reset_tokens_user_id   ON password_reset_tokens(user_id);
+CREATE INDEX IX_password_reset_tokens_token     ON password_reset_tokens(token);
+CREATE INDEX IX_password_reset_tokens_active
+    ON password_reset_tokens(token, expires_at)
+    WHERE is_used = 0;
 GO
 
 -- ============================================================
@@ -151,7 +172,6 @@ CREATE INDEX IX_household_members_household_id ON household_members(household_id
 CREATE INDEX IX_household_members_user_id      ON household_members(user_id);
 GO
 
--- Back-fill household FK on users now that households table exists
 ALTER TABLE users
     ADD CONSTRAINT FK_users_household FOREIGN KEY (household_id) REFERENCES households(id);
 GO
@@ -185,8 +205,8 @@ CREATE TABLE ingredients (
     category_id     INT             NULL,
     description     NVARCHAR(MAX)   NULL,
     image_url       NVARCHAR(2048)  NULL,
-    foodon_id       NVARCHAR(50)    NULL,   -- FoodOn ontology ID
-    usda_fdc_id     INT             NULL,   -- USDA FoodData Central ID
+    foodon_id       NVARCHAR(50)    NULL,
+    usda_fdc_id     INT             NULL,
     is_common       BIT             NOT NULL DEFAULT 0,
     is_pantry_staple BIT            NOT NULL DEFAULT 0,
     is_deleted      BIT             NOT NULL DEFAULT 0,
@@ -211,7 +231,7 @@ CREATE TABLE ingredient_aliases (
     id              INT IDENTITY(1,1) PRIMARY KEY,
     ingredient_id   INT             NOT NULL,
     alias           NVARCHAR(255)   NOT NULL,
-    source          NVARCHAR(50)    NULL,   -- 'manual','ai','usda'
+    source          NVARCHAR(50)    NULL,
     created_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
     updated_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
 
@@ -248,8 +268,8 @@ CREATE TABLE ingredient_substitutions (
     substitute_id       INT             NOT NULL,
     match_type          NVARCHAR(20)    NOT NULL DEFAULT 'close'
                             CONSTRAINT CHK_ingredient_substitutions_match CHECK (match_type IN ('exact','close','distant')),
-    context             NVARCHAR(100)   NULL,   -- e.g. 'baking', 'general'
-    ratio               NVARCHAR(50)    NULL,   -- e.g. '1:1', '1 cup A = 0.75 cup B'
+    context             NVARCHAR(100)   NULL,
+    ratio               NVARCHAR(50)    NULL,
     is_bidirectional    BIT             NOT NULL DEFAULT 1,
     created_by          INT             NULL,
     created_at          DATETIME2       NOT NULL DEFAULT GETDATE(),
@@ -294,13 +314,13 @@ CREATE TABLE recipes (
     cuisine         NVARCHAR(100)   NULL,
     difficulty      NVARCHAR(20)    NULL
                         CONSTRAINT CHK_recipes_difficulty CHECK (difficulty IN ('easy','medium','hard')),
-    prep_time       INT             NULL,   -- minutes
-    cook_time       INT             NULL,   -- minutes
+    prep_time       INT             NULL,
+    cook_time       INT             NULL,
     servings        INT             NULL,
     privacy         NVARCHAR(20)    NOT NULL DEFAULT 'public'
                         CONSTRAINT CHK_recipes_privacy CHECK (privacy IN ('public','private','friends')),
     author_id       INT             NULL,
-    parse_log_id    INT             NULL,   -- FK set after recipe_parse_log
+    parse_log_id    INT             NULL,
     is_deleted      BIT             NOT NULL DEFAULT 0,
     created_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
     updated_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
@@ -320,11 +340,11 @@ GO
 CREATE TABLE recipe_ingredients (
     id              INT IDENTITY(1,1) PRIMARY KEY,
     recipe_id       INT             NOT NULL,
-    ingredient_id   INT             NULL,   -- NULL = unlinked (AI confidence too low)
-    name_display    NVARCHAR(255)   NOT NULL,   -- Raw string as shown in recipe
+    ingredient_id   INT             NULL,
+    name_display    NVARCHAR(255)   NOT NULL,
     quantity        DECIMAL(10,3)   NULL,
     unit            NVARCHAR(50)    NULL,
-    prep_state      NVARCHAR(100)   NULL,   -- 'sifted', 'diced', 'melted', etc.
+    prep_state      NVARCHAR(100)   NULL,
     is_optional     BIT             NOT NULL DEFAULT 0,
     sort_order      INT             NOT NULL DEFAULT 0,
     created_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
@@ -343,7 +363,7 @@ CREATE TABLE recipe_steps (
     recipe_id       INT             NOT NULL,
     step_number     INT             NOT NULL,
     instruction     NVARCHAR(MAX)   NOT NULL,
-    duration        INT             NULL,   -- minutes (optional)
+    duration        INT             NULL,
     created_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
     updated_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
 
@@ -371,12 +391,12 @@ CREATE TABLE recipe_nutrition (
     id          INT IDENTITY(1,1) PRIMARY KEY,
     recipe_id   INT             NOT NULL,
     calories    DECIMAL(8,2)    NULL,
-    protein     DECIMAL(8,2)    NULL,   -- grams
-    carbs       DECIMAL(8,2)    NULL,   -- grams
-    fat         DECIMAL(8,2)    NULL,   -- grams
-    fiber       DECIMAL(8,2)    NULL,   -- grams
-    sodium      DECIMAL(8,2)    NULL,   -- milligrams
-    sugar       DECIMAL(8,2)    NULL,   -- grams
+    protein     DECIMAL(8,2)    NULL,
+    carbs       DECIMAL(8,2)    NULL,
+    fat         DECIMAL(8,2)    NULL,
+    fiber       DECIMAL(8,2)    NULL,
+    sodium      DECIMAL(8,2)    NULL,
+    sugar       DECIMAL(8,2)    NULL,
     created_at  DATETIME2       NOT NULL DEFAULT GETDATE(),
     updated_at  DATETIME2       NOT NULL DEFAULT GETDATE(),
 
@@ -428,7 +448,7 @@ CREATE TABLE user_inventory (
     user_id             INT             NOT NULL,
     household_id        INT             NULL,
     ingredient_id       INT             NOT NULL,
-    product_name        NVARCHAR(255)   NULL,   -- Brand/specific product
+    product_name        NVARCHAR(255)   NULL,
     quantity            DECIMAL(10,3)   NOT NULL DEFAULT 1,
     unit                NVARCHAR(50)    NOT NULL,
     storage_location    NVARCHAR(20)    NOT NULL DEFAULT 'pantry'
@@ -488,7 +508,7 @@ CREATE TABLE shopping_list_items (
     unit            NVARCHAR(50)    NULL,
     is_checked      BIT             NOT NULL DEFAULT 0,
     source_recipe_id INT            NULL,
-    source_label    NVARCHAR(255)   NULL,   -- e.g. "For: Chicken Tikka (Tue dinner)"
+    source_label    NVARCHAR(255)   NULL,
     checked_at      DATETIME2       NULL,
     created_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
     updated_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
@@ -511,8 +531,8 @@ CREATE TABLE user_dietary_preferences (
                         CONSTRAINT CHK_user_dietary_preferences_type CHECK (
                             preference_type IN ('diet','allergen','blacklist','pantry_staple')
                         ),
-    value           NVARCHAR(100)   NULL,   -- e.g. 'vegetarian', 'milk' (for diet/allergen)
-    ingredient_id   INT             NULL,   -- for blacklist and pantry_staple entries
+    value           NVARCHAR(100)   NULL,
+    ingredient_id   INT             NULL,
     created_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
     updated_at      DATETIME2       NOT NULL DEFAULT GETDATE(),
 
@@ -551,10 +571,10 @@ GO
 CREATE TABLE activity_feed (
     id          INT IDENTITY(1,1) PRIMARY KEY,
     user_id     INT             NOT NULL,
-    action      NVARCHAR(50)    NOT NULL,   -- 'posted_recipe','rated_recipe','cooked_meal','followed_user'
+    action      NVARCHAR(50)    NOT NULL,
     target_id   INT             NULL,
-    target_type NVARCHAR(50)    NULL,       -- 'recipe','user','meal_plan'
-    payload     NVARCHAR(MAX)   NULL,       -- optional JSON extra context
+    target_type NVARCHAR(50)    NULL,
+    payload     NVARCHAR(MAX)   NULL,
     created_at  DATETIME2       NOT NULL DEFAULT GETDATE(),
     updated_at  DATETIME2       NOT NULL DEFAULT GETDATE(),
 
@@ -575,7 +595,7 @@ CREATE TABLE recipe_parse_log (
     source_url          NVARCHAR(2048)  NULL,
     source_type         NVARCHAR(20)    NOT NULL DEFAULT 'url'
                             CONSTRAINT CHK_recipe_parse_log_source CHECK (source_type IN ('url','text')),
-    extraction_method   NVARCHAR(20)    NULL,   -- 'json-ld','ai'
+    extraction_method   NVARCHAR(20)    NULL,
     model_used          NVARCHAR(100)   NULL,
     tokens_used         INT             NULL,
     estimated_cost      DECIMAL(10,6)   NULL,
@@ -593,7 +613,6 @@ CREATE TABLE recipe_parse_log (
 CREATE INDEX IX_recipe_parse_log_user_id ON recipe_parse_log(user_id);
 GO
 
--- Back-fill parse_log FK on recipes now that recipe_parse_log exists
 ALTER TABLE recipes
     ADD CONSTRAINT FK_recipes_parse_log FOREIGN KEY (parse_log_id) REFERENCES recipe_parse_log(id);
 GO
@@ -643,14 +662,10 @@ CREATE TABLE schema_version (
 
 INSERT INTO schema_version (version, description)
 VALUES ('1.0', 'Initial normalized schema — 22 tables, 8 domains');
+
+INSERT INTO schema_version (version, description)
+VALUES ('1.1', 'Add password_reset_tokens (REQ-001.9)');
 GO
 
-PRINT '✅ FoodGenie v1.0 full DDL applied successfully.';
-PRINT '   Tables: users, user_sessions, user_oauth, households, household_members,';
-PRINT '           food_categories, ingredients, ingredient_aliases, ingredient_allergens,';
-PRINT '           ingredient_substitutions, tags, recipes, recipe_ingredients, recipe_steps,';
-PRINT '           recipe_tags, recipe_nutrition, recipe_ratings, user_favorites,';
-PRINT '           user_inventory, meal_plans, shopping_list_items, user_dietary_preferences,';
-PRINT '           friend_connections, activity_feed, recipe_parse_log, scale_devices,';
-PRINT '           scale_readings, schema_version';
+PRINT '✅ FoodGenie v1.1 full DDL applied successfully.';
 GO

@@ -2,16 +2,21 @@
 // Express Application Setup
 // ============================================
 
-import express from 'express';
+import express, { type Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import session from 'express-session';
+import passport from 'passport';
+import { configurePassport } from './config/passport.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiRoutes } from './routes/index.js';
 
-export function createApp() {
+export function createApp(): Application {
     const app = express();
+
+    // ---- Passport ----
+    configurePassport();
 
     // ---- Security ----
     app.use(helmet());
@@ -44,10 +49,8 @@ export function createApp() {
     }));
 
     // ---- Auth ----
-    // TODO: Configure Passport.js in Sprint 1.1
-    // configurePassport();
-    // app.use(passport.initialize());
-    // app.use(passport.session());
+    app.use(passport.initialize());
+    app.use(passport.session());
 
     // ---- Routes ----
     app.use('/api', apiRoutes);

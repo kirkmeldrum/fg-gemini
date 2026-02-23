@@ -35,7 +35,7 @@ CLIENT LAYER (TypeScript)
 ┌──────────────────────────┐    ┌──────────────────────────┐
 │    React Web App          │    │  React Native Mobile      │
 │    (Vite + Tailwind)      │    │  (Expo) — Phase 2         │
-│    Port: 5173             │    │                            │
+│    Port: 5174             │    │                            │
 │    • Responsive SPA       │    │  • Camera (OCR/barcode)    │
 │    • Recipe browser       │    │  • BLE Scale (Phase 3)     │
 │    • Meal planner         │    │  • Push notifications      │
@@ -48,7 +48,7 @@ CLIENT LAYER (TypeScript)
                             │
 API LAYER (Node.js + TypeScript)
 ┌───────────────────────────────────────────────────────────┐
-│              Express API — Port 3001                       │
+│              Express API — Port 3002                       │
 │                                                            │
 │  Routes → Middleware → Services → Repositories             │
 │                                                            │

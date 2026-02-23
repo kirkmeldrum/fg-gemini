@@ -1,11 +1,12 @@
--- Create Database
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'FoodGenie')
+-- ⚠️  LEGACY SEED — prototype schema only. Use database/ddl/v1.1_full_ddl.sql instead.
+-- If running this, the target database is FoodGenieGemini.
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'FoodGenieGemini')
 BEGIN
-    CREATE DATABASE FoodGenie;
+    CREATE DATABASE FoodGenieGemini;
 END
 GO
 
-USE FoodGenie;
+USE FoodGenieGemini;
 GO
 
 -- --- Clean up existing tables if they exist ---
