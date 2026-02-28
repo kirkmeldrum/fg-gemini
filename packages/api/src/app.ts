@@ -64,6 +64,10 @@ export function createApp(): Application {
         });
     });
 
+    app.get('/', (_req, res) => {
+        res.send('🍳 FoodGenie API is running. Use /api for routes or /health for status.');
+    });
+
     // ---- Error Handling ----
     app.use(errorHandler);
 
