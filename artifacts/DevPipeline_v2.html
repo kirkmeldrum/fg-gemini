@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Assisted Development Framework</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #030712; color: #e5e7eb; min-height: 100vh; }
+  .container { max-width: 1152px; margin: 0 auto; padding: 16px; }
+  @media(min-width:768px) { .container { padding: 24px; } }
+  h1 { font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  @media(min-width:768px) { h1 { font-size: 1.875rem; } }
+  .subtitle { color: #9ca3af; font-size: 0.875rem; margin-bottom: 24px; }
+  .tabs { display: flex; gap: 4px; background: #111827; border-radius: 8px; padding: 4px; width: fit-content; margin-bottom: 24px; }
+  .tab { padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; background: transparent; color: #9ca3af; transition: all 0.2s; }
+  .tab:hover { color: #fff; }
+  .tab.active { background: #374151; color: #fff; }
+  .phase-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .phase-btn { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; border: 2px solid #374151; background: #111827; font-size: 0.875rem; color: #e5e7eb; cursor: pointer; transition: all 0.2s; }
+  .phase-btn:hover { border-color: #6b7280; }
+  .phase-btn .icon { font-size: 1.125rem; }
+  .phase-btn .label { text-align: left; }
+  .phase-btn .phase-num { font-weight: 500; font-size: 0.75rem; opacity: 0.6; }
+  .phase-btn .arrow { color: #4b5563; margin-left: 4px; }
+  @media(max-width:767px) { .phase-btn .arrow { display: none; } }
+  .phase-detail { border-radius: 12px; border: 2px solid; padding: 20px; margin-bottom: 24px; }
+  .phase-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .phase-header .icon { font-size: 1.875rem; }
+  .phase-header h2 { font-size: 1.25rem; font-weight: 700; }
+  .phase-meta { display: flex; gap: 16px; font-size: 0.875rem; color: #4b5563; }
+  .columns { display: grid; gap: 16px; margin-bottom: 16px; }
+  @media(min-width:768px) { .columns { grid-template-columns: 1fr 1fr 1fr; } }
+  .columns h3 { font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 8px; }
+  .columns li { font-size: 0.875rem; display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; list-style: none; }
+  .columns li .dot { margin-top: 2px; flex-shrink: 0; }
+  .gate-box { background: rgba(255,255,255,0.6); border-radius: 8px; padding: 12px; border: 1px solid #e5e7eb; }
+  .gate-box h3 { font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 4px; }
+  .gate-box p { font-size: 0.875rem; font-style: italic; color: #1f2937; }
+  .tool-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .tool-pill { padding: 4px 8px; background: rgba(255,255,255,0.5); border-radius: 4px; font-size: 0.75rem; font-weight: 500; border: 1px solid #d1d5db; color: #1f2937; }
+  .card-grid { display: grid; gap: 16px; }
+  @media(min-width:768px) { .card-grid { grid-template-columns: 1fr 1fr; } }
+  .card { background: #111827; border-radius: 12px; padding: 20px; border: 1px solid #1f2937; }
+  .card h3 { font-weight: 700; font-size: 1.125rem; margin-bottom: 12px; color: #fff; }
+  .card .desc { color: #9ca3af; font-size: 0.875rem; margin-bottom: 12px; }
+  .doc-row { display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 8px; }
+  .doc-row code { color: #4ade80; font-family: 'Consolas', 'Monaco', monospace; }
+  .doc-row span { color: #6b7280; }
+  .principle { margin-bottom: 12px; }
+  .principle .title { font-weight: 500; color: #fff; font-size: 0.875rem; }
+  .principle .desc { color: #9ca3af; font-size: 0.875rem; }
+  .stack-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .stack-header h3 { font-weight: 700; font-size: 1.125rem; color: #fff; }
+  .cost-badge { color: #4ade80; font-size: 0.875rem; font-weight: 500; background: rgba(34,197,94,0.1); padding: 2px 8px; border-radius: 4px; }
+  .best-for { font-size: 0.875rem; color: #9ca3af; margin-bottom: 12px; }
+  .stack-item { font-size: 0.875rem; background: #1f2937; border-radius: 4px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .stack-item .num { color: #6b7280; font-size: 0.75rem; width: 16px; }
+  .step { border-left: 4px solid; padding-left: 16px; padding-top: 8px; padding-bottom: 8px; margin-bottom: 16px; }
+  .step .top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .step .step-title { font-weight: 600; color: #fff; }
+  .step .step-detail { font-size: 0.875rem; color: #9ca3af; }
+  .step .time-badge { font-size: 0.75rem; color: #6b7280; background: #1f2937; padding: 4px 8px; border-radius: 4px; white-space: nowrap; }
+  .tool-guide { margin-top: 24px; background: #1f2937; border-radius: 8px; padding: 16px; }
+  .tool-guide h4 { font-weight: 600; font-size: 0.875rem; margin-bottom: 8px; color: #fff; }
+  .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media(max-width:767px) { .tool-grid { grid-template-columns: 1fr; } }
+  .tool-row { display: flex; justify-content: space-between; background: #111827; border-radius: 4px; padding: 6px 12px; font-size: 0.875rem; }
+  .tool-row .task { color: #9ca3af; }
+  .tool-row .tool { color: #fff; font-weight: 500; }
+  .tool-cat h4 { font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; margin-top: 12px; }
+  .tool-entry { display: flex; align-items: center; justify-content: space-between; background: #1f2937; border-radius: 4px; padding: 8px 12px; font-size: 0.875rem; margin-bottom: 4px; }
+  .tool-entry .name { font-weight: 500; color: #fff; width: 144px; flex-shrink: 0; }
+  .tool-entry .use { color: #9ca3af; flex: 1; padding: 0 12px; }
+  .tool-entry .phases-badge { font-size: 0.75rem; color: #6b7280; background: #374151; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
+  .hidden { display: none; }
+  .phase-0 { border-color: #9333ea; background: #faf5ff; color: #1f2937; }
+  .phase-1 { border-color: #2563eb; background: #eff6ff; color: #1f2937; }
+  .phase-2 { border-color: #0d9488; background: #f0fdfa; color: #1f2937; }
+  .phase-3 { border-color: #d97706; background: #fffbeb; color: #1f2937; }
+  .phase-4 { border-color: #16a34a; background: #f0fdf4; color: #1f2937; }
+  .phase-5 { border-color: #dc2626; background: #fef2f2; color: #1f2937; }
+  .phase-6 { border-color: #374151; background: #f9fafb; color: #1f2937; }
+  .btn-active-0 { border-color: #9333ea !important; background: #faf5ff !important; color: #1f2937 !important; font-weight: 600; }
+  .btn-active-1 { border-color: #2563eb !important; background: #eff6ff !important; color: #1f2937 !important; font-weight: 600; }
+  .btn-active-2 { border-color: #0d9488 !important; background: #f0fdfa !important; color: #1f2937 !important; font-weight: 600; }
+  .btn-active-3 { border-color: #d97706 !important; background: #fffbeb !important; color: #1f2937 !important; font-weight: 600; }
+  .btn-active-4 { border-color: #16a34a !important; background: #f0fdf4 !important; color: #1f2937 !important; font-weight: 600; }
+  .btn-active-5 { border-color: #dc2626 !important; background: #fef2f2 !important; color: #1f2937 !important; font-weight: 600; }
+  .btn-active-6 { border-color: #374151 !important; background: #f9fafb !important; color: #1f2937 !important; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>AI-Assisted Development Framework</h1>
+  <p class="subtitle">Standardized methodology for building applications with AI assistance</p>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('pipeline')">Pipeline</button>
+    <button class="tab" onclick="switchTab('stacks')">Stack Templates</button>
+    <button class="tab" onclick="switchTab('session')">Session Protocol</button>
+    <button class="tab" onclick="switchTab('tools')">Tool Map</button>
+  </div>
+
+  <div id="tab-pipeline">
+    <div class="phase-row" id="phase-buttons"></div>
+    <div id="phase-detail" class="hidden"></div>
+    <div id="default-cards" class="card-grid">
+      <div class="card">
+        <h3>&#x1F4C4; Documentation Suite</h3>
+        <p class="desc">Required before writing any code (Phase 3 output):</p>
+        <div class="doc-row"><code>PROJECT_STATUS.md</code><span>Sprint state &amp; session resumption</span></div>
+        <div class="doc-row"><code>REQUIREMENTS.md</code><span>What to build + acceptance criteria</span></div>
+        <div class="doc-row"><code>ARCHITECTURE.md</code><span>Stack, patterns, data flow</span></div>
+        <div class="doc-row"><code>DATABASE.md</code><span>Schema documentation</span></div>
+        <div class="doc-row"><code>API.md</code><span>Endpoint reference</span></div>
+        <div class="doc-row"><code>DEVELOPMENT_WORKFLOW.md</code><span>Session protocol</span></div>
+        <div class="doc-row"><code>v1.0_full_ddl.sql</code><span>Database creation script</span></div>
+      </div>
+      <div class="card">
+        <h3>&#x26A1; Core Principles</h3>
+        <div class="principle"><div class="title">Requirements Before Code</div><div class="desc">No code until requirements are approved</div></div>
+        <div class="principle"><div class="title">AI Does Heavy Lifting</div><div class="desc">Humans define WHAT; AI builds HOW</div></div>
+        <div class="principle"><div class="title">Documentation IS the Product</div><div class="desc">Docs define the app; code derives from them</div></div>
+        <div class="principle"><div class="title">Single Source of Truth</div><div class="desc">PROJECT_STATUS.md is canonical</div></div>
+        <div class="principle"><div class="title">Validate Before Advancing</div><div class="desc">Every phase gate requires sign-off</div></div>
+        <div class="principle"><div class="title">Scalable &amp; Teachable</div><div class="desc">Anyone can follow this process</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-stacks" class="hidden"><div class="card-grid" id="stack-grid"></div></div>
+
+  <div id="tab-session" class="hidden">
+    <div class="card">
+      <h3>AI Development Session Protocol</h3>
+      <p class="desc">Follow this protocol for EVERY development session with Claude, Claude Code, or Windsurf.</p>
+      <div class="step" style="border-color:#3b82f6"><div class="top"><div><div class="step-title">Step 1: Read PROJECT_STATUS.md</div><div class="step-detail">Say: "Let's continue [Project]. Read PROJECT_STATUS.md"</div></div><span class="time-badge">~1 min</span></div></div>
+      <div class="step" style="border-color:#14b8a6"><div class="top"><div><div class="step-title">Step 2: Verify Filesystem Access</div><div class="step-detail">Confirm access to project directory and review relevant files</div></div><span class="time-badge">~1 min</span></div></div>
+      <div class="step" style="border-color:#22c55e"><div class="top"><div><div class="step-title">Step 3: Collaborative Development</div><div class="step-detail">Ask questions &#x2192; Understand patterns &#x2192; Make changes via filesystem MCP</div></div><span class="time-badge">Main work</span></div></div>
+      <div class="step" style="border-color:#f59e0b"><div class="top"><div><div class="step-title">Step 4: Quick Validation</div><div class="step-detail">1&#x2013;2 things to verify. Don't over-engineer testing.</div></div><span class="time-badge">~5 min</span></div></div>
+      <div class="step" style="border-color:#ef4444"><div class="top"><div><div class="step-title">Step 5: Git Commit</div><div class="step-detail">git add -A &amp;&amp; git commit -m "descriptive message"</div></div><span class="time-badge">~1 min</span></div></div>
+      <div class="tool-guide">
+        <h4>Tool Selection Guide</h4>
+        <div class="tool-grid">
+          <div class="tool-row"><span class="task">Architecture &amp; planning</span><span class="tool">Claude (claude.ai)</span></div>
+          <div class="tool-row"><span class="task">Multi-file code changes</span><span class="tool">Claude Code</span></div>
+          <div class="tool-row"><span class="task">Real-time coding + preview</span><span class="tool">Windsurf</span></div>
+          <div class="tool-row"><span class="task">Database work</span><span class="tool">Visual Studio / SSMS</span></div>
+          <div class="tool-row"><span class="task">UI design</span><span class="tool">Figma</span></div>
+          <div class="tool-row"><span class="task">Automation scripts</span><span class="tool">Claude Code / Python</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-tools" class="hidden"><div class="card" id="tool-map"></div></div>
+</div>
+
+<script>
+var phases=[
+  {id:0,name:"DISCOVER",icon:"\u{1F4A1}",duration:"1\u20133 days",owner:"Project Lead",tools:["Claude (Research)"],gate:"Do we understand the problem well enough to define requirements?",inputs:["Business problem","Target users","Rough scope"],activities:["Define problem statement","Identify user roles","Brain dump features","Research existing solutions","Assess feasibility"],outputs:["Problem Statement","User Role Matrix","Feature Brain Dump","Constraints Document","Go/No-Go Decision"]},
+  {id:1,name:"DEFINE",icon:"\u{1F4CB}",duration:"3\u20137 days",owner:"Project Lead + AI Operator",tools:["Claude (Requirements)"],gate:"Are requirements complete, unambiguous, and testable?",inputs:["Phase 0 outputs"],activities:["Organize features into groups","Write user stories","Define acceptance criteria","Prioritize features (MoSCoW)","Define MVP scope","Write non-functional requirements","Create REQUIREMENTS.md"],outputs:["REQUIREMENTS.md","Non-Functional Requirements","MVP Scope Definition","Sprint Roadmap"]},
+  {id:2,name:"DESIGN",icon:"\u{1F3A8}",duration:"3\u201310 days",owner:"Project Lead + AI Operator",tools:["Figma","Claude (Wireframes)","Mermaid"],gate:"Do wireframes represent all requirements? Have gaps been fed back?",inputs:["Approved REQUIREMENTS.md"],activities:["Create page inventory","Define navigation flow","Low-fi wireframes in Figma","Annotate: data sources (blue)","Annotate: user actions (green)","Annotate: validation (red)","Annotate: states (orange)","High-fi mockups","Review \u2192 update requirements","Data flow diagrams"],outputs:["Page Inventory","Navigation Flow","Annotated Wireframes","High-Fi Mockups","Updated REQUIREMENTS.md","Data Flow Diagram"]},
+  {id:3,name:"ARCHITECT",icon:"\u{1F3D7}\uFE0F",duration:"3\u20137 days",owner:"AI Operator + Claude",tools:["Claude (Architecture)","SSMS"],gate:"Is architecture complete enough to begin implementation?",inputs:["Approved Requirements + Wireframes"],activities:["Evaluate & select tech stack","Design database schema","Design API endpoints","Define data flow architecture","Create project structure","Bootstrap application files","Create all documentation"],outputs:["ARCHITECTURE.md","DATABASE.md + DDL","API.md","DEVELOPMENT_WORKFLOW.md","PROJECT_STATUS.md","Bootstrap Files",".env.example"]},
+  {id:4,name:"BUILD",icon:"\u26A1",duration:"Ongoing sprints",owner:"AI Operator",tools:["Claude","Claude Code","Windsurf","SSMS"],gate:"Do all completed features meet their acceptance criteria?",inputs:["Sprint backlog from roadmap"],activities:["Sprint planning","AI development sessions","Step 1: Read PROJECT_STATUS.md","Step 2: Verify filesystem access","Step 3: Collaborative development","Step 4: Quick validation","Step 5: Git commit","Update documentation"],outputs:["Working Features","Updated Documentation","Git Commits","Updated PROJECT_STATUS.md"]},
+  {id:5,name:"VALIDATE",icon:"\u2705",duration:"1\u20135 days",owner:"QA Operator",tools:["Claude (Test Plans)","Browser DevTools"],gate:"Is this release ready for production?",inputs:["Completed sprint features"],activities:["Functional testing","Integration testing","Regression testing","Responsive testing (375-1440px)","Error handling verification","Performance testing","Security review","User acceptance testing (UAT)"],outputs:["QA Test Plan","Test Results","Bug List","UAT Sign-off"]},
+  {id:6,name:"DEPLOY",icon:"\u{1F680}",duration:"1\u20132 days",owner:"AI Operator + DevOps",tools:["Claude (Scripts)","SSH","PM2","Nginx"],gate:"Production smoke test passed?",inputs:["Release-approved build"],activities:["Provision production environment","Run DDL on production DB","Configure environment variables","Set up SSL + reverse proxy","Configure process manager","Remove dev aids","Deploy application","Smoke test in production"],outputs:["Live Application","Monitoring Dashboard","Deployment Runbook","Backup Strategy"]}
+];
+var stacks=[
+  {id:"A",name:"Lightweight Web App",bestFor:"Internal tools, dashboards, CRUD apps",cost:"$0/mo",stack:["Node.js + Express","React + Vite + Tailwind","SQL Server Express","On-prem Ubuntu + Nginx + PM2"]},
+  {id:"B",name:"Full-Stack TypeScript",bestFor:"Consumer apps, mobile-ready",cost:"$0\u2013100/mo",stack:["Node.js + Express + TypeScript","React + Vite + Tailwind","SQL Server / PostgreSQL","Redis + Meilisearch + Socket.io"]},
+  {id:"C",name:"Enterprise .NET",bestFor:"Microsoft ecosystem, Power Platform",cost:"$50\u2013300/mo",stack:[".NET 8 / ASP.NET Core","React or Blazor","SQL Server","Azure + Power Automate"]},
+  {id:"D",name:"Python Data/AI",bestFor:"Data analytics, ML, AI-heavy apps",cost:"$50\u2013200/mo",stack:["FastAPI or Django","React + Vite","PostgreSQL","AI SDKs + Cloud GPU"]}
+];
+var toolCategories=[
+  {category:"AI Assistants",tools:[{name:"Claude (claude.ai)",use:"Architecture, docs, planning, complex logic",phases:"0\u20136"},{name:"Claude Code",use:"Multi-file editing, terminal, refactors",phases:"3\u20135"},{name:"Windsurf AI",use:"Real-time coding with copilot",phases:"4"}]},
+  {category:"Development",tools:[{name:"Node.js / npm",use:"JavaScript runtime, package management",phases:"3\u20136"},{name:"Python",use:"Scripting, data processing, ML",phases:"3\u20136"},{name:"Git / GitHub",use:"Version control, collaboration",phases:"3\u20136"}]},
+  {category:"IDEs & Editors",tools:[{name:"Windsurf",use:"Primary IDE with AI assistance",phases:"4"},{name:"Visual Studio",use:"SQL Server tools, .NET, debugging",phases:"3\u20135"}]},
+  {category:"Design",tools:[{name:"Figma",use:"Wireframes, mockups, design system",phases:"2"},{name:"Mermaid",use:"Architecture & flow diagrams",phases:"2\u20133"}]},
+  {category:"Database",tools:[{name:"SQL Server Express",use:"Local development database",phases:"3\u20136"},{name:"SSMS",use:"Query writing, DDL execution",phases:"3\u20135"}]},
+  {category:"Deployment",tools:[{name:"Nginx",use:"Reverse proxy, SSL termination",phases:"6"},{name:"PM2",use:"Process management, clustering",phases:"6"},{name:"Ubuntu 24.04",use:"Production server OS",phases:"6"}]}
+];
+
+var selectedPhase = null;
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(function(b, i) {
+    var k = ['pipeline','stacks','session','tools'];
+    b.classList.toggle('active', k[i] === t);
+  });
+  ['pipeline','stacks','session','tools'].forEach(function(x) {
+    document.getElementById('tab-' + x).classList.toggle('hidden', x !== t);
+  });
+}
+
+function selectPhase(id) {
+  selectedPhase = selectedPhase === id ? null : id;
+  renderPhaseButtons();
+  renderPhaseDetail();
+}
+
+function renderPhaseButtons() {
+  var c = document.getElementById('phase-buttons');
+  c.innerHTML = '';
+  phases.forEach(function(p, i) {
+    var b = document.createElement('button');
+    b.className = 'phase-btn' + (selectedPhase === p.id ? ' btn-active-' + p.id : '');
+    b.onclick = function() { selectPhase(p.id); };
+    b.innerHTML = '<span class="icon">' + p.icon + '</span>' +
+      '<div class="label"><div class="phase-num">Phase ' + p.id + '</div><div>' + p.name + '</div></div>' +
+      (i < phases.length - 1 ? '<span class="arrow">\u2192</span>' : '');
+    c.appendChild(b);
+  });
+}
+
+function renderPhaseDetail() {
+  var d = document.getElementById('phase-detail');
+  var cards = document.getElementById('default-cards');
+  if (selectedPhase === null) {
+    d.classList.add('hidden');
+    cards.classList.remove('hidden');
+    return;
+  }
+  cards.classList.add('hidden');
+  d.classList.remove('hidden');
+  var p = phases[selectedPhase];
+  d.className = 'phase-detail phase-' + p.id;
+  d.innerHTML =
+    '<div class="phase-header"><span class="icon">' + p.icon + '</span><div>' +
+    '<h2>Phase ' + p.id + ': ' + p.name + '</h2>' +
+    '<div class="phase-meta"><span>\u23F1 ' + p.duration + '</span><span>\u{1F464} ' + p.owner + '</span></div>' +
+    '</div></div>' +
+    '<div class="columns">' +
+    '<div><h3>Inputs</h3><ul>' + p.inputs.map(function(x) { return '<li><span class="dot" style="color:#3b82f6">\u2192</span>' + x + '</li>'; }).join('') + '</ul></div>' +
+    '<div><h3>Activities</h3><ul>' + p.activities.map(function(x) { return '<li><span class="dot" style="color:#22c55e">\u2022</span>' + x + '</li>'; }).join('') + '</ul></div>' +
+    '<div><h3>Outputs</h3><ul>' + p.outputs.map(function(x) { return '<li><span class="dot" style="color:#f59e0b">\u2713</span>' + x + '</li>'; }).join('') + '</ul></div>' +
+    '</div>' +
+    '<div class="gate-box"><h3>\u{1F6A7} Gate ' + p.id + ' \u2014 Validation Checkpoint</h3>' +
+    '<p>\u201C' + p.gate + '\u201D</p></div>' +
+    '<div class="tool-pills">' + p.tools.map(function(t) { return '<span class="tool-pill">\u{1F6E0} ' + t + '</span>'; }).join('') + '</div>';
+}
+
+function renderStacks() {
+  document.getElementById('stack-grid').innerHTML = stacks.map(function(s) {
+    return '<div class="card"><div class="stack-header"><h3>Template ' + s.id + ': ' + s.name + '</h3>' +
+      '<span class="cost-badge">' + s.cost + '</span></div>' +
+      '<p class="best-for">' + s.bestFor + '</p>' +
+      s.stack.map(function(t, i) { return '<div class="stack-item"><span class="num">' + (i+1) + '.</span>' + t + '</div>'; }).join('') +
+      '</div>';
+  }).join('');
+}
+
+function renderToolMap() {
+  document.getElementById('tool-map').innerHTML =
+    '<h3 style="font-weight:700;font-size:1.125rem;margin-bottom:16px;color:#fff">Tool Ecosystem</h3>' +
+    toolCategories.map(function(cat) {
+      return '<div class="tool-cat"><h4>' + cat.category + '</h4>' +
+        cat.tools.map(function(t) {
+          return '<div class="tool-entry"><span class="name">' + t.name + '</span>' +
+            '<span class="use">' + t.use + '</span>' +
+            '<span class="phases-badge">Phases ' + t.phases + '</span></div>';
+        }).join('') + '</div>';
+    }).join('');
+}
+
+renderPhaseButtons();
+renderStacks();
+renderToolMap();
+</script>
+</body>
+</html>

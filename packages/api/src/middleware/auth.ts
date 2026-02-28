@@ -17,6 +17,7 @@ declare global {
             displayName: string | null;
             avatarUrl: string | null;
             role: 'user' | 'contributor' | 'vendor' | 'admin';
+            household_id: number | null;
         }
     }
 }

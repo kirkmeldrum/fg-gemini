@@ -1,66 +1,53 @@
-# 🍳 FoodGenie
+# Enterprise Agentic SDLC Framework
 
-**Your AI-powered kitchen companion.**
+**Version:** 2.0.0-Enterprise | **Author:** Kirk Meldrum | **Last Updated:** 2026-02-23
 
-FoodGenie answers the daily question: *"What can I cook with what I have?"* — combining intelligent recipe matching, inventory tracking, meal planning, and a social food network.
+## What This Is
+
+The Enterprise Agentic Software Development Life Cycle (SDLC) is a standardized, DevSecOps-compliant methodology for building multi-stack software applications with AI assistance. Upgraded from v1.0, this framework scales from solo developers to 30+ person enterprise teams by enforcing strict Data Governance, automated CI/CD pipelines, and multi-role orchestration.
 
 ## Quick Start
 
-```bash
-# Install dependencies
-pnpm install
+1. **New project?** → Follow `templates/NEW_PROJECT_BOOTSTRAP.md`
+2. **Setting up your AI?** → Follow `CLAUDE_PROJECT_SETUP.md`
+3. **Starting a dev session?** → Say *"Let's continue [project name]"* to trigger the Session Manager.
+4. **Need the visual dashboard?** → Open `artifacts/Enterprise_SDLC_v2.html` in your browser.
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your SQL Server credentials
+## Directory Structure (v2.0)
 
-# Create database (in SSMS)
-# CREATE DATABASE FoodGenieGemini;
-# Then run: database/ddl/v1.0_full_ddl.sql
-
-# Start development
-pnpm dev          # API (:3001) + Web (:5173)
-pnpm dev:api      # API only
-pnpm dev:web      # Web only
-```
-
-## Stack
-
-- **Language:** TypeScript (everywhere)
-- **Backend:** Node.js 20 + Express 4.x
-- **Frontend:** React 19 + Vite + Tailwind CSS
-- **Mobile:** React Native (Expo) — Phase 2
-- **Database:** SQL Server Express (dev) → PostgreSQL (prod)
-- **AI:** Anthropic Claude + OpenAI GPT-4o-mini
-
-## Monorepo Structure
-
-```
-fg-gemini/
-├── .agent/workflows/   Agent workflow definitions
-├── packages/
-│   ├── shared/         @foodgenie/shared — Types + validation (Zod)
-│   ├── api/            @foodgenie/api   — Express API server
-│   ├── web/            @foodgenie/web   — React SPA
-│   └── mobile/         @foodgenie/mobile — React Native (Phase 2)
-├── database/
-│   ├── ddl/            Full DDL scripts (versioned)
-│   ├── migrations/     Incremental migration scripts
-│   └── seeds/          Seed data
-└── docs/               Architecture, requirements, API reference
-```
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [PROJECT_STATUS.md](./docs/PROJECT_STATUS.md) | Sprint tracker, current status |
-| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System architecture |
-| [REQUIREMENTS.md](./docs/REQUIREMENTS.md) | Functional requirements |
-| [DATABASE.md](./docs/DATABASE.md) | Schema documentation |
-| [API.md](./docs/API.md) | API endpoint reference |
-| [DEVELOPMENT_WORKFLOW.md](./docs/DEVELOPMENT_WORKFLOW.md) | Development process |
-
-## License
-
-Private — All rights reserved.
+```text
+Dev-Framework/
+├── README.md                              ← You are here
+├── AI_ASSISTED_DEV_FRAMEWORK_v2.md        ← Master methodology document (The Process)
+├── TEAM_ROLES_AND_SCALING.md              ← Multi-person scaling guide (The People)
+├── ENTERPRISE_STACKS_v2.md                ← 10 approved architectures (The Technology)
+├── CI_CD_PIPELINE_DOCUMENTATION.md        ← DevSecOps & Automated GitHub Actions
+├── WIREFRAME_PROCESS.md                   ← Figma wireframe-to-requirements workflow
+├── CUSTOM_SKILLS.md                       ← Skill specifications overview
+├── CLAUDE_PROJECT_INSTRUCTIONS.md         ← Custom instructions (paste into Claude Project)
+├── CLAUDE_PROJECT_SETUP.md                ← Step-by-step Claude Project setup guide
+│
+├── .github/                               ← DevSecOps & Repository Governance
+│   ├── workflows/                         ← CI/CD pipeline automation YAMLs
+│   └── ISSUE_TEMPLATE/                    ← Bug and Feature request governance
+│
+├── templates/
+│   ├── PROJECT_STATUS_TEMPLATE.md         ← Template for sprint tracking (Canonical state)
+│   ├── REQUIREMENTS_TEMPLATE.md           ← Template for functional requirements
+│   └── NEW_PROJECT_BOOTSTRAP.md           ← Step-by-step new project checklist
+│
+├── skills/                                ← Claude Custom Skills (Upload as AI Knowledge)
+│   ├── session-manager/                   ← Session startup protocol
+│   ├── requirements-writer/               ← Requirements generation (REQ-XXX format)
+│   ├── wireframe-describer/               ← Wireframe descriptions for Figma
+│   ├── api-endpoint-generator/            ← Full-stack API endpoint generation
+│   ├── react-component-generator/         ← React component generation (all 4 UI states)
+│   ├── db-migration-generator/            ← SQL Server migration scripts + DDL updates
+│   ├── test-suite-generator/              ← (v2.0) Automated unit/E2E test generation
+│   ├── ci-cd-pipeline-generator/          ← (v2.0) GitHub Actions/GitLab CI yaml generator
+│   ├── swift-mobile-generator/            ← (v2.0) Native iOS MVVM view generation
+│   └── laravel-app-generator/             ← (v2.0) Enterprise PHP/Laravel generation
+│
+└── artifacts/
+    ├── Enterprise_SDLC_v2.html            ← Interactive v2.0 master dashboard
+    └── pipeline-flow.mermaid              ← Pipeline flow diagram

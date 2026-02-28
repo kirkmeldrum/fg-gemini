@@ -29,9 +29,9 @@ Known projects and their locations:
 
 | Project | Local Path | Description |
 |---------|-----------|-------------|
-| FoodGenie | `C:\Users\kirkm\Projects\fg` | AI-powered kitchen companion |
-| OilDri QA | `C:\Users\kirkm\Projects\oildri-qa` | Quality assurance inspection app |
-| Dev-Framework | `C:\Users\kirkm\Projects\Dev-Framework` | This methodology framework |
+| [Your Project Name] | C:\Path\To\Project | [Description] |
+| [Your Project Name] | C:\Path\To\Project | [Description] |
+| Dev-Framework_V2 | `C:\Users\kirkm\Projects\Dev-Framework_v2` | This methodology framework |
 
 When a new project is created, add it to this registry.
 

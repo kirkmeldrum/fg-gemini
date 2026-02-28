@@ -10,29 +10,24 @@ export const apiRoutes: IRouter = Router();
 import authRoutes from './auth.js';
 apiRoutes.use('/auth', authRoutes);
 
-// Sprint 1.2: Household routes
+// Sprint 1.2: Household routes (Phase 2)
 // apiRoutes.use('/households', householdRoutes);
 
 // Sprint 1.3: Recipe routes
-// apiRoutes.use('/recipes', recipeRoutes);
+import recipeRoutes from './recipe.js';
+apiRoutes.use('/recipes', recipeRoutes);
 
-// Sprint 1.4: Ingredient routes
-// apiRoutes.use('/ingredients', ingredientRoutes);
+// Sprint 1.4: Ingredient & Inventory & Shopping
+import ingredientRoutes from './ingredient.js';
+import inventoryRoutes from './inventory.js';
+import shoppingRoutes from './shopping.js';
 
-// Sprint 1.5: Inventory routes
-// apiRoutes.use('/inventory', inventoryRoutes);
+apiRoutes.use('/ingredients', ingredientRoutes);
+apiRoutes.use('/inventory', inventoryRoutes);
+apiRoutes.use('/shopping', shoppingRoutes);
 
 // Sprint 1.6: Smart Search routes
 // apiRoutes.use('/search', searchRoutes);
-
-// Sprint 1.7: AI Clipper routes
-// apiRoutes.use('/clip', clipperRoutes);
-
-// Sprint 1.8: Meal Planner routes
-// apiRoutes.use('/planner', plannerRoutes);
-
-// Sprint 1.9: Shopping List routes
-// apiRoutes.use('/shopping', shoppingRoutes);
 
 // Placeholder root route
 apiRoutes.get('/', (_req, res) => {

@@ -28,7 +28,7 @@ export const Card: React.FC<{ children?: React.ReactNode; className?: string; on
   </div>
 );
 
-export const Badge: React.FC<{ children?: React.ReactNode; color?: string }> = ({ children, color = 'emerald' }) => {
+export const Badge: React.FC<{ children?: React.ReactNode; color?: string; className?: string }> = ({ children, color = 'emerald', className = '' }) => {
   const colors: Record<string, string> = {
     emerald: "bg-emerald-100 text-emerald-800",
     orange: "bg-orange-100 text-orange-800",
@@ -38,7 +38,7 @@ export const Badge: React.FC<{ children?: React.ReactNode; color?: string }> = (
   };
   const colorClass = colors[color] || colors.emerald;
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${colorClass}`}>
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${colorClass} ${className}`}>
       {children}
     </span>
   );

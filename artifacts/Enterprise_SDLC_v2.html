@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Agentic SDLC v2.0</title>
+<style>
+  :root {
+    --bg-main: #0f172a; --bg-card: #1e293b; --bg-hover: #334155;
+    --text-main: #f8fafc; --text-muted: #94a3b8; --accent: #3b82f6;
+    --border: #334155; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+    --phase-0: #8b5cf6; --phase-1: #3b82f6; --phase-2: #0ea5e9; --phase-3: #f59e0b;
+    --phase-4: #10b981; --phase-5: #ef4444; --phase-6: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.6; padding: 2rem; }
+  .container { max-width: 1300px; margin: 0 auto; }
+  
+  header { margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  h1 { font-size: 2.5rem; font-weight: 800; background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subtitle { color: var(--text-muted); font-size: 1.1rem; margin-top: 0.5rem; }
+
+  /* Navigation Tabs */
+  .tabs { display: flex; gap: 0.5rem; background: var(--bg-card); padding: 0.5rem; border-radius: 0.75rem; overflow-x: auto; margin-bottom: 2rem; border: 1px solid var(--border); }
+  .tab-btn { background: transparent; color: var(--text-muted); border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.95rem; white-space: nowrap; }
+  .tab-btn:hover { color: var(--text-main); background: var(--bg-hover); }
+  .tab-btn.active { background: var(--accent); color: white; }
+
+  /* Content Sections */
+  .section { display: none; animation: fadeIn 0.3s ease-in-out; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Grid Layouts */
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+
+  /* Cards */
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+  .card h3 { font-size: 1.25rem; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem; }
+  .card-badge { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 9999px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  
+  /* Pipeline Specific */
+  .pipeline-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
+  .phase-btn { display: flex; align-items: center; gap: 0.5rem; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); padding: 0.75rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; flex: 1; min-width: 140px; font-weight: 600; font-size: 0.9rem; }
+  .phase-btn:hover { border-color: var(--text-muted); color: var(--text-main); }
+  .phase-btn.active { border-color: currentColor; color: #fff; }
+  .phase-detail-card { border-left: 4px solid; }
+  .phase-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+  .task-list { list-style: none; }
+  .task-list li { padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; display: flex; align-items: flex-start; gap: 0.5rem; }
+  .task-list li:last-child { border-bottom: none; }
+  .task-list li::before { content: '→'; color: var(--accent); }
+
+  /* Badges & Tags */
+  .tag { display: inline-block; background: var(--bg-hover); color: var(--text-main); font-size: 0.8rem; padding: 0.25rem 0.75rem; border-radius: 0.25rem; margin: 0.25rem; border: 1px solid var(--border); }
+  .cost-free { background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: var(--success); }
+  .cost-med { background: rgba(245, 158, 11, 0.1); color: var(--warning); border-color: var(--warning); }
+  
+  /* Utilities */
+  .text-highlight { color: var(--accent); font-weight: 600; }
+  .gate-box { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); padding: 1rem; border-radius: 0.5rem; margin-top: 1.5rem; }
+  .gate-box h4 { color: #fca5a5; margin-bottom: 0.25rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Enterprise Agentic SDLC v2.0</h1>
+    <p class="subtitle">Multi-Role Orchestration, DevSecOps Automation, and Advanced Technology Stacks</p>
+  </header>
+
+  <div class="tabs" id="mainTabs">
+    <button class="tab-btn active" data-target="pipeline">1. The Process (Pipeline)</button>
+    <button class="tab-btn" data-target="roles">2. The People (Roles)</button>
+    <button class="tab-btn" data-target="stacks">3. The Tech (Stacks)</button>
+    <button class="tab-btn" data-target="skills">4. AI Skills & Tools</button>
+    <button class="tab-btn" data-target="governance">5. CI/CD & Governance</button>
+  </div>
+
+  <div id="pipeline" class="section active">
+    <div class="pipeline-nav" id="phaseButtons">
+      </div>
+    <div id="phaseContent">
+      </div>
+  </div>
+
+  <div id="roles" class="section">
+    <div class="grid-3">
+      <div class="card" style="border-top: 3px solid var(--phase-0)">
+        <h3>🧠 Project Lead</h3>
+        <p class="subtitle" style="margin-bottom: 1rem;">Owns the "What"</p>
+        <ul class="task-list">
+          <li>Defines value delivery & requirements</li>
+          <li>Owns Phase 0 (Discover) & Phase 1 (Define)</li>
+          <li>Uses Gemini/Claude for market research</li>
+          <li>Approves MVP Scope</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top: 3px solid var(--phase-3)">
+        <h3>🏗️ Enterprise Architect</h3>
+        <p class="subtitle" style="margin-bottom: 1rem;">Owns the "Structure"</p>
+        <ul class="task-list">
+          <li>System Design, Compliance, Stack Selection</li>
+          <li>Owns Phase 3 (Architect)</li>
+          <li>Approves ARCHITECTURE.md</li>
+          <li>Writes Threat Models & ADRs</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top: 3px solid var(--phase-4)">
+        <h3>⚡ AI Operator</h3>
+        <p class="subtitle" style="margin-bottom: 1rem;">Owns the "Build"</p>
+        <ul class="task-list">
+          <li>Translates requirements into code using AI</li>
+          <li>Owns Phase 2 (Design) & Phase 4 (Build)</li>
+          <li>Pilots IDEs (Windsurf/Cursor)</li>
+          <li>Follows PROJECT_STATUS.md protocol strictly</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top: 3px solid var(--phase-5)">
+        <h3>🛡️ QA Automation Eng.</h3>
+        <p class="subtitle" style="margin-bottom: 1rem;">Owns the "Verifier"</p>
+        <ul class="task-list">
+          <li>Test Strategy & Quality Gates</li>
+          <li>Owns Phase 5 (Validate)</li>
+          <li>Uses AI to generate Jest/Playwright suites</li>
+          <li>Owns the "Green Build"</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top: 3px solid var(--phase-6)">
+        <h3>🔐 DevSecOps Eng.</h3>
+        <p class="subtitle" style="margin-bottom: 1rem;">Owns the "Gatekeeper"</p>
+        <ul class="task-list">
+          <li>Security, Infrastructure, Deployment</li>
+          <li>Owns Phase 6 (Deploy)</li>
+          <li>Manages CI/CD pipelines & SAST/DAST</li>
+          <li>Provisions Infrastructure as Code (IaC)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="stacks" class="section">
+    <div class="grid-2" id="stacksGrid">
+      </div>
+  </div>
+
+  <div id="skills" class="section">
+    <div class="grid-2">
+      <div class="card">
+        <h3>🛠️ The Core 6 AI Skills</h3>
+        <p style="margin-bottom: 1rem; color: var(--text-muted);">Loaded into Claude Projects as Knowledge</p>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <div class="tag">1. session-manager (Forces state reading)</div>
+          <div class="tag">2. requirements-writer (REQ-XXX format)</div>
+          <div class="tag">3. wireframe-describer (5-color mapping)</div>
+          <div class="tag">4. api-endpoint-generator (Repo/Service/Route)</div>
+          <div class="tag">5. react-component-generator (4 UI states)</div>
+          <div class="tag">6. db-migration-generator (Transactional SQL)</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🚀 The New v2.0 Enterprise Skills</h3>
+        <p style="margin-bottom: 1rem; color: var(--text-muted);">Extending capabilities across roles</p>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <div class="tag" style="border-color: var(--phase-5)">7. test-suite-generator (Jest, Cypress, XCTest)</div>
+          <div class="tag" style="border-color: var(--phase-6)">8. ci-cd-pipeline-generator (GitHub Actions YAML)</div>
+          <div class="tag" style="border-color: var(--accent)">9. swift-mobile-generator (iOS MVVM architecture)</div>
+          <div class="tag" style="border-color: var(--danger)">10. laravel-app-generator (PHP Enterprise standard)</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>🤖 Approved LLM Matrix</h3>
+        <ul class="task-list">
+          <li><strong>Anthropic Claude:</strong> Complex Architecture, Refactoring, Docs</li>
+          <li><strong>Google Gemini:</strong> Multimodal Reasoning, UI Translation, Large Context</li>
+          <li><strong>OpenAI ChatGPT:</strong> General Logic, Quick Scripting, Formatting</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>💻 Agentic IDEs</h3>
+        <ul class="task-list">
+          <li><strong>Windsurf / Cursor:</strong> Primary AI-Assisted Local Development</li>
+          <li><strong>Google Antigravity:</strong> Agent-First Mission Control</li>
+          <li><strong>VS Code:</strong> Standard Human/AI Integration</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="governance" class="section">
+    <div class="grid-2">
+      <div class="card">
+        <h3>🏛️ 4-Pillar AI Data Governance</h3>
+        <ul class="task-list">
+          <li><strong>1. Foundational Data Management:</strong> Strict DDL tracking, Vector/Graph schema controls.</li>
+          <li><strong>2. Responsible AI Lifecycle:</strong> Bias checks, RAG hallucination guardrails in prompts.</li>
+          <li><strong>3. Operational Monitoring:</strong> Logging telemetry for agentic actions and API usage.</li>
+          <li><strong>4. Ethical & Compliance Oversight:</strong> GDPR, HIPAA, and EU AI Act constraints mapped in Phase 0.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>⚙️ Automated CI/CD Pipeline (Phase 5/6)</h3>
+        <ul class="task-list">
+          <li><strong>Stage 1: Lint & Format:</strong> Enforces human readability on AI code.</li>
+          <li><strong>Stage 2: SAST & Dependencies:</strong> Trivy/SonarQube scans for secrets and CVEs.</li>
+          <li><strong>Stage 3: Automated Testing:</strong> Executes AI-generated Unit & E2E suites.</li>
+          <li><strong>Stage 4: IaC Provisioning:</strong> Terraform/Bicep environment build.</li>
+          <li><strong>Stage 5: Immutable Deployment:</strong> Zero-downtime cutover.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Tab Switching Logic
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.target).classList.add('active');
+    });
+  });
+
+  // Phases Data
+  const phases = [
+    { id: 0, name: "DISCOVER", color: "var(--phase-0)", owner: "Project Lead + Architect", duration: "1-3 days", 
+      activities: ["Problem Statement & Brain Dump", "Data Privacy Impact Assessment (DPIA)", "Regulatory Check (GDPR/EU AI Act)", "Go/No-Go Decision"],
+      outputs: ["GOVERNANCE_CHECKLIST.md", "User Role Matrix"], gate: "Do we understand the problem, constraints, and compliance impact?" },
+    { id: 1, name: "DEFINE", color: "var(--phase-1)", owner: "Project Lead + Security", duration: "3-7 days", 
+      activities: ["Write User Stories + Acceptance Criteria", "Define Security/Abuse Cases", "MoSCoW Prioritization"],
+      outputs: ["REQUIREMENTS.md (with Security Constraints)"], gate: "Are requirements atomic, testable, and secure?" },
+    { id: 2, name: "DESIGN", color: "var(--phase-2)", owner: "Designer + AI Operator", duration: "3-10 days", 
+      activities: ["Low-Fi Wireframes", "5-Color Annotations (Data, Actions, Validation, States, Responsive)", "High-Fi Mockups"],
+      outputs: ["Annotated Figma Prototypes", "Updated REQUIREMENTS.md"], gate: "Does the wireframe explicitly expose all data and state needs?" },
+    { id: 3, name: "ARCHITECT", color: "var(--phase-3)", owner: "Enterprise Architect", duration: "3-7 days", 
+      activities: ["Stack Selection (A-J)", "Threat Modeling (STRIDE)", "Architecture Decision Records (ADR)", "Schema Design"],
+      outputs: ["ARCHITECTURE.md", "DATABASE.md + DDL", "THREAT_MODEL.md", "CI_CD_CONFIG.yaml"], gate: "Is the system design locked, secure, and ready for code?" },
+    { id: 4, name: "BUILD", color: "var(--phase-4)", owner: "AI Operator", duration: "1-2 week Sprints", 
+      activities: ["Read PROJECT_STATUS.md (Mandatory)", "Agentic Code Generation (Frontend/Backend)", "Generate Unit Tests with Code"],
+      outputs: ["Feature Code", "Unit Tests", "Git Commits"], gate: "Does the code perfectly match the Acceptance Criteria locally?" },
+    { id: 5, name: "VALIDATE", color: "var(--phase-5)", owner: "QA Automation Eng.", duration: "Continuous CI", 
+      activities: ["Execute Automated Regression Suites", "Run SAST & Dependency Scans", "Dynamic Application Security Testing (DAST)"],
+      outputs: ["Test Results", "Security Scan Reports"], gate: "Is the CI Build Green and free of Critical Vulnerabilities?" },
+    { id: 6, name: "DEPLOY", color: "var(--phase-6)", owner: "DevSecOps Eng.", duration: "Automated CD", 
+      activities: ["Provision Infrastructure as Code (IaC)", "Execute DB Migrations", "Deploy Application Containers/Artifacts"],
+      outputs: ["Immutable Production Release", "Monitoring Telemetry"], gate: "Is production stable and telemetry flowing?" }
+  ];
+
+  let currentPhase = 0;
+
+  function renderPhases() {
+    const nav = document.getElementById('phaseButtons');
+    nav.innerHTML = phases.map((p, i) => `
+      <button class="phase-btn ${i === currentPhase ? 'active' : ''}" 
+              style="${i === currentPhase ? `background: ${p.color}; color: white; border-color: ${p.color};` : `border-bottom: 3px solid ${p.color}`}"
+              onclick="selectPhase(${i})">
+        <span style="opacity:0.7">P${p.id}</span> ${p.name}
+      </button>
+    `).join('');
+
+    const p = phases[currentPhase];
+    document.getElementById('phaseContent').innerHTML = `
+      <div class="card phase-detail-card" style="border-left-color: ${p.color}">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Phase ${p.id}: ${p.name}</h2>
+            <p class="text-muted"><strong>Owner:</strong> ${p.owner} | <strong>Duration:</strong> ${p.duration}</p>
+          </div>
+        </div>
+        
+        <div class="phase-columns">
+          <div>
+            <h4 style="color: ${p.color}; margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.85rem;">Activities</h4>
+            <ul class="task-list">
+              ${p.activities.map(a => `<li>${a}</li>`).join('')}
+            </ul>
+          </div>
+          <div>
+            <h4 style="color: ${p.color}; margin-bottom: 0.5rem; text-transform: uppercase; font-size: 0.85rem;">Outputs</h4>
+            <ul class="task-list">
+              ${p.outputs.map(o => `<li>${o}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+
+        <div class="gate-box">
+          <h4>🚧 Gate ${p.id} Validation</h4>
+          <p style="font-weight: 600; font-style: italic;">"${p.gate}"</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function selectPhase(index) {
+    currentPhase = index;
+    renderPhases();
+  }
+
+  // Stacks Data
+  const stacks = [
+    { id: "A", name: "Lightweight Web App", tags: ["Node.js", "React", "SQL Express"], desc: "Internal tools, dashboards, CRUD apps.", badge: "cost-free", cost: "$0/mo" },
+    { id: "B", name: "Full-Stack TypeScript", tags: ["Node.js", "React", "PostgreSQL", "Redis"], desc: "Consumer web apps, scalable SaaS.", badge: "cost-med", cost: "$0-100/mo" },
+    { id: "C", name: "Enterprise .NET", tags: [".NET 8", "Blazor", "SQL Server", "Azure"], desc: "Corporate ecosystem integration.", badge: "cost-med", cost: "$50-300/mo" },
+    { id: "D", name: "Python Data/AI", tags: ["FastAPI", "PostgreSQL", "Cloud GPU"], desc: "Data analytics, traditional ML backends.", badge: "cost-med", cost: "$50-200/mo" },
+    { id: "E", name: "Native iOS Mobile", tags: ["Swift 6", "Xcode 16", "Core ML"], desc: "High-performance Apple ecosystem apps.", badge: "cost-med", cost: "$99/yr" },
+    { id: "F", name: "Enterprise PHP", tags: ["Laravel 12", "Livewire", "MySQL"], desc: "Highly maintainable web monoliths.", badge: "cost-free", cost: "$20-100/mo" },
+    { id: "G", name: "Agentic Knowledge Graph", tags: ["Neo4j", "Pinecone", "LangChain"], desc: "Explainable AI, Enterprise RAG systems.", badge: "cost-med", cost: "$200+/mo" },
+    { id: "H", name: "Decentralized Provenance", tags: ["Blockchain", "Solidity", "L2"], desc: "High-security, immutable supply chain records.", badge: "cost-med", cost: "Variable" },
+    { id: "I", name: "Cross-Platform Mobile", tags: ["Flutter / React Native", "Firebase"], desc: "Simultaneous iOS & Android deployment.", badge: "cost-free", cost: "$0-50/mo" },
+    { id: "J", name: "High-Perf Microservices", tags: ["Golang", "gRPC", "Kafka"], desc: "Extreme throughput backend services.", badge: "cost-med", cost: "$100+/mo" }
+  ];
+
+  document.getElementById('stacksGrid').innerHTML = stacks.map(s => `
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+        <h3 style="margin: 0; font-size: 1.1rem;">Stack ${s.id}: ${s.name}</h3>
+        <span class="tag ${s.badge}">${s.cost}</span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">${s.desc}</p>
+      <div>${s.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+    </div>
+  `).join('');
+
+  // Init
+  renderPhases();
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic SDLC Framework v2.0</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #030712; color: #e5e7eb; min-height: 100vh; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 2rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .subtitle { color: #9ca3af; font-size: 0.95rem; margin-bottom: 32px; }
+  .tabs { display: flex; gap: 8px; background: #111827; border-radius: 8px; padding: 6px; width: fit-content; margin-bottom: 24px; }
+  .tab { padding: 8px 16px; border-radius: 6px; font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; background: transparent; color: #9ca3af; transition: all 0.2s; }
+  .tab:hover { color: #fff; }
+  .tab.active { background: #374151; color: #fff; }
+  .card-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .card { background: #111827; border-radius: 12px; padding: 24px; border: 1px solid #1f2937; }
+  .card h3 { font-weight: 700; font-size: 1.25rem; margin-bottom: 12px; color: #fff; }
+  .stack-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .cost-badge { color: #4ade80; font-size: 0.85rem; font-weight: 600; background: rgba(34,197,94,0.1); padding: 4px 10px; border-radius: 6px; }
+  .best-for { font-size: 0.9rem; color: #9ca3af; margin-bottom: 16px; font-style: italic; }
+  .stack-item { background: #1f2937; border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; margin-bottom: 6px; display: flex; gap: 10px; align-items: center; }
+  .hidden { display: none; }
+  .tool-cat h4 { color: #60a5fa; margin-top: 16px; margin-bottom: 8px; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+  .tool-row { display: flex; justify-content: space-between; padding: 8px; background: #1f2937; margin-bottom: 4px; border-radius: 4px; font-size: 0.9rem; }
+  .tool-name { font-weight: bold; color: #fff; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Agentic SDLC Framework v2.0</h1>
+  <p class="subtitle">Enterprise Architecture, AI Governance, and Multi-Stack Orchestration</p>
+  
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('stacks')">Stack Templates</button>
+    <button class="tab" onclick="switchTab('tools')">AI Tool Map</button>
+    <button class="tab" onclick="switchTab('governance')">Governance & Security</button>
+  </div>
+
+  <div id="tab-stacks" class="card-grid"></div>
+
+  <div id="tab-tools" class="hidden card-grid">
+    <div class="card">
+      <h3>AI Foundation Models</h3>
+      <div class="tool-cat"><h4>Supported LLMs</h4></div>
+      <div class="tool-row"><span class="tool-name">Anthropic Claude</span><span>Complex Architecture & Context</span></div>
+      <div class="tool-row"><span class="tool-name">Google Gemini</span><span>Multimodal & Real-time Reasoning</span></div>
+      <div class="tool-row"><span class="tool-name">OpenAI ChatGPT</span><span>General Logic & Scripting</span></div>
+    </div>
+    <div class="card">
+      <h3>Agentic IDEs</h3>
+      <div class="tool-cat"><h4>Development Environments</h4></div>
+      <div class="tool-row"><span class="tool-name">Windsurf</span><span>Memory & MCP Integration</span></div>
+      <div class="tool-row"><span class="tool-name">Cursor</span><span>Cross-file AI Refactoring</span></div>
+      <div class="tool-row"><span class="tool-name">Google Antigravity</span><span>Agent-First Mission Control</span></div>
+      <div class="tool-row"><span class="tool-name">VS Code</span><span>Standard Human/AI Integration</span></div>
+    </div>
+  </div>
+
+  <div id="tab-governance" class="hidden card-grid">
+    <div class="card">
+      <h3>4-Pillar Governance</h3>
+      <p class="best-for">Required for Enterprise CI/CD Deployment</p>
+      <div class="stack-item">1. Foundational Data Management & Quality</div>
+      <div class="stack-item">2. Responsible AI Development Lifecycle</div>
+      <div class="stack-item">3. Operational Monitoring & Control</div>
+      <div class="stack-item">4. Ethical & Compliance Oversight (EU AI Act)</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const stacks = [
+  { id: "A", name: "Lightweight Web App", bestFor: "Internal tools, dashboards, CRUD apps", cost: "$0/mo", items: ["Node.js + Express", "React + Vite + Tailwind", "SQL Server Express", "Ubuntu + Nginx + PM2"] },
+  { id: "B", name: "Full-Stack TypeScript", bestFor: "Consumer web apps", cost: "$0–100/mo", items: ["Node.js + TS", "React + Vite", "PostgreSQL", "Redis + Socket.io"] },
+  { id: "C", name: "Enterprise .NET", bestFor: "Microsoft ecosystem", cost: "$50–300/mo", items: [".NET 8 / ASP.NET Core", "Blazor / React", "SQL Server", "Azure + Power Automate"] },
+  { id: "D", name: "Python Data/AI", bestFor: "Data analytics, traditional ML", cost: "$50–200/mo", items: ["FastAPI / Django", "React + Vite", "PostgreSQL", "AI SDKs + Cloud GPU"] },
+  { id: "E", name: "Native iOS Mobile", bestFor: "Apple Ecosystem, Spatial Computing", cost: "$99/yr", items: ["Swift 6", "Xcode 16", "ARKit / Core ML", "On-device ML optimization"] },
+  { id: "F", name: "Enterprise PHP", bestFor: "Highly maintainable web monoliths", cost: "$20-100/mo", items: ["Laravel 12.x", "API Resources & PSR syntax", "MySQL / PostgreSQL", "Centralized Middleware"] },
+  { id: "G", name: "Agentic Knowledge Graph", bestFor: "Explainable AI & RAG", cost: "$200+/mo", items: ["Neo4j (Graph DB)", "Pinecone (Vector DB)", "Agentic GraphRAG", "Python + LangChain"] },
+  { id: "H", name: "Decentralized Provenance", bestFor: "High-security, immutable records", cost: "Variable", items: ["Dai-DSS Framework", "Blockchain / Smart Contracts", "Federated Learning", "Layer-2 Scaling"] }
+];
+
+document.getElementById('tab-stacks').innerHTML = stacks.map(s => `
+  <div class="card">
+    <div class="stack-header">
+      <h3>Stack ${s.id}: ${s.name}</h3>
+      <span class="cost-badge">${s.cost}</span>
+    </div>
+    <p class="best-for">${s.bestFor}</p>
+    ${s.items.map((item, i) => `<div class="stack-item"><strong>${i+1}.</strong> ${item}</div>`).join('')}
+  </div>
+`).join('');
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  ['stacks', 'tools', 'governance'].forEach(x => {
+    document.getElementById('tab-' + x).classList.toggle('hidden', x !== t);
+  });
+}
+</script>
+</body>
+</html>

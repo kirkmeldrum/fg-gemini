@@ -159,7 +159,7 @@ export const itemRepo = {
 ```typescript
 // packages/api/src/services/itemService.ts
 import { itemRepo } from '../repositories/itemRepo';
-import { createItemSchema, itemQuerySchema } from '@foodgenie/shared/validation';
+import { createItemSchema, itemQuerySchema } from '@my-workspace/shared/validation';
 
 export const itemService = {
   async list(query: unknown) {

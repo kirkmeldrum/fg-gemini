@@ -50,7 +50,7 @@ function AppInner() {
             case 'dashboard': return <DashboardPage onChangeView={navigate} />;
             case 'kitchen': return <MyKitchen />;
             case 'recipes': return <Recipes onNavigate={navigate} />;
-            case 'recipe-detail': return <RecipeDetail recipeId={routeParams.id} onBack={() => navigate('recipes')} />;
+            case 'recipe-detail': return <RecipeDetail slug={routeParams.slug} onBack={() => navigate('recipes')} />;
             case 'add-recipe': return <AddRecipe onBack={() => navigate('recipes')} initialData={routeParams.initialData} />;
             case 'planner': return <MealPlanner />;
             case 'shopping': return <ShoppingList />;

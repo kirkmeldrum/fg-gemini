@@ -1,0 +1,131 @@
+# Migrating fg-gemini's Frontend into fg
+
+## What fg-gemini Has (That fg Doesn't)
+
+All of these are **hand-written** during fg-gemini's development — there are no external downloads, CDN libraries, or third-party design systems to fetch. Everything lives in the repo as [.tsx](file:///C:/Users/kirkm/Projects/fg/packages/web/src/App.tsx) and [.ts](file:///C:/Users/kirkm/Projects/fg/packages/web/vite.config.ts) files using Tailwind utility classes.
+
+### 1. UI Component Library
+**Source:** [components/ui/index.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx)
+
+A single file (220 lines) containing reusable primitives:
+[Button](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#8-23), [Card](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#24-29), [Badge](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#30-45), [Label](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#46-51), [Input](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#52-58), [TextArea](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#59-65), [Checkbox](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#66-78), [RangeInput](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#79-96), [Modal](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#97-115), [FacebookIcon](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#116-128), [Layout](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/components/ui/index.tsx#141-221) (sidebar + mobile nav)
+
+### 2. Page Components (13 pages)
+**Source:** [pages/](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages)
+
+| File | Description | Size |
+|------|-------------|------|
+| [DashboardPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/DashboardPage.tsx) | Main dashboard with recipe matching, meal plan highlights | 330 lines |
+| [AuthPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/AuthPage.tsx) | Login/register with mock auth | 8.5 KB |
+| [RecipesPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/RecipesPage.tsx) | Recipe browsing with search & filters | 12 KB |
+| [RecipeDetailPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/RecipeDetailPage.tsx) | Full recipe view with reviews | 16 KB |
+| [AddRecipePage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/AddRecipePage.tsx) | Recipe creation form | 11 KB |
+| [MyKitchenPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/MyKitchenPage.tsx) | Pantry inventory management | 8.5 KB |
+| [MealPlannerPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/MealPlannerPage.tsx) | Weekly meal planning grid | 11 KB |
+| [ShoppingListPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/ShoppingListPage.tsx) | Shopping list with check-off | 9 KB |
+| [FoodEncyclopediaPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/FoodEncyclopediaPage.tsx) | Food ontology browser | 20 KB |
+| [ProfilePage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/ProfilePage.tsx) | User profile & preferences | 14 KB |
+| [SocialNetworkPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/SocialNetworkPage.tsx) | Social feed & friends | 16 KB |
+| [SmartScannerPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/SmartScannerPage.tsx) | Camera-based food scanner | 15 KB |
+| [RecipeIndexerPage.tsx](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/pages/RecipeIndexerPage.tsx) | OCR recipe scanner | 4 KB |
+
+### 3. Mock Data Layer
+**Source:** [data/mockData.ts](file:///C:/Users/kirkm/Projects/fg-gemini/packages/web/src/data/mockData.ts)
+
+700-line file containing TypeScript types, mock data arrays, and a simulated API service (`api` object) with localStorage persistence. This provides the entire data layer for the frontend to function without a real backend.
+
+### 4. Icon Library
+**npm package:** `lucide-react` (already in fg-gemini's [package.json](file:///C:/Users/kirkm/Projects/fg/package.json))
+
+All icons throughout the UI come from [Lucide](https://lucide.dev/) — an open-source icon set. This is an npm dependency, not downloaded files.
+
+---
+
+## Key Differences Between the Two Projects
+
+| Aspect | fg | fg-gemini |
+|--------|-----|-----------|
+| **Routing** | `react-router-dom` (URL-based) | State-based (useState) |
+| **Fonts** | DM Sans + DM Serif Display (Google Fonts CDN) | Inter + system-ui (CSS only) |
+| **Primary color** | Green palette (`#22c55e`) | Orange palette (`#ee7a12`) |
+| **Icons** | None | `lucide-react` |
+| **React version** | 18.x | 19.x |
+| **Vite version** | 5.x | 6.x |
+| **Pages** | Empty placeholder | 13 full pages |
+| **Components** | Empty directory | Full UI library |
+
+---
+
+## Migration Steps
+
+### Step 1 — Install the missing dependency
+```powershell
+cd C:\Users\kirkm\Projects\fg
+pnpm --filter @foodgenie/web add lucide-react
+```
+
+### Step 2 — Copy the UI components
+```powershell
+# Copy the component library
+Copy-Item "C:\Users\kirkm\Projects\fg-gemini\packages\web\src\components\ui\index.tsx" `
+          "C:\Users\kirkm\Projects\fg\packages\web\src\components\ui\index.tsx"
+```
+
+### Step 3 — Copy the mock data layer
+```powershell
+# Create the data directory and copy
+New-Item -ItemType Directory -Force "C:\Users\kirkm\Projects\fg\packages\web\src\data"
+Copy-Item "C:\Users\kirkm\Projects\fg-gemini\packages\web\src\data\mockData.ts" `
+          "C:\Users\kirkm\Projects\fg\packages\web\src\data\mockData.ts"
+```
+
+### Step 4 — Copy all page components
+```powershell
+# Copy all pages
+Copy-Item "C:\Users\kirkm\Projects\fg-gemini\packages\web\src\pages\*.tsx" `
+          "C:\Users\kirkm\Projects\fg\packages\web\src\pages\"
+```
+
+### Step 5 — Create the barrel re-export files
+The page components import from `'./components'` and `'./data'` (relative paths from when they were at the src root). You need shim files:
+
+**Create `C:\Users\kirkm\Projects\fg\packages\web\src\pages\components.ts`:**
+```ts
+export { Button, Card, Badge, Label, Input, TextArea, Checkbox, RangeInput, Modal, FacebookIcon, Layout } from '../components/ui';
+```
+
+**Create `C:\Users\kirkm\Projects\fg\packages\web\src\pages\data.ts`:**
+```ts
+export * from '../data/mockData';
+```
+
+### Step 6 — Choose your App.tsx approach
+
+> [!IMPORTANT]
+> fg uses `react-router-dom` (URL-based routing) while fg-gemini uses state-based routing (`useState`). You must choose one approach.
+
+**Option A: State-based routing (match fg-gemini exactly)**
+Replace [App.tsx](file:///C:/Users/kirkm/Projects/fg/packages/web/src/App.tsx) and [main.tsx](file:///C:/Users/kirkm/Projects/fg/packages/web/src/main.tsx) with the same files we created for fg-gemini (remove `BrowserRouter`).
+
+**Option B: Convert to react-router-dom routes (recommended for fg)**
+Keep fg's `BrowserRouter` setup and wire the pages into proper `<Route>` elements. This is better long-term but requires you to adjust how pages navigate (replace `onChangeView('recipes')` calls with `useNavigate('/recipes')` from react-router-dom).
+
+### Step 7 — Align styling
+
+**Option A: Keep fg's font/color scheme** (no changes needed to Tailwind config).
+The pages use Tailwind's built-in colors (`emerald`, `slate`, `blue`, etc.) more than the custom `primary` palette, so they'll look fine with either config.
+
+**Option B: Match fg-gemini's look exactly**
+- Replace [index.css](file:///C:/Users/kirkm/Projects/fg/packages/web/src/index.css) with fg-gemini's version (Inter font)
+- Replace [tailwind.config.js](file:///C:/Users/kirkm/Projects/fg/packages/web/tailwind.config.js) with fg-gemini's version
+- Remove the Google Fonts `<link>` tags from [index.html](file:///C:/Users/kirkm/Projects/fg/packages/web/index.html)
+
+---
+
+## What You Do NOT Need to Download
+
+- **No external stylesheets** — all styling is Tailwind utility classes written inline
+- **No CSS frameworks** — both projects already have Tailwind configured
+- **No icon files** — `lucide-react` is an npm package (Step 1)
+- **No image assets** — all images are Unsplash URLs and pravatar.cc URLs embedded in the mock data
+- **No design tokens** — the UI component library defines its own styles inline

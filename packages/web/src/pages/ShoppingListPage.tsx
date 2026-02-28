@@ -1,220 +1,267 @@
+import { useState, useEffect } from 'react';
+import { ShoppingBag, Check, Plus, Trash2, ArrowRightCircle, ListChecks, Search } from 'lucide-react';
+import { Button, Card, Badge, Modal, Input } from '../components/ui';
+import {
+  getShoppingList,
+  addShoppingItem,
+  toggleShoppingItemCheck,
+  deleteShoppingItem,
+  addInventoryItem,
+  ShoppingItem
+} from '../lib/api';
 
-import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Check, Plus, Trash2, ArrowRightCircle, CheckSquare } from 'lucide-react';
-import { Button, Card, Badge, Modal, Label, Input } from './components';
-import { api, ShoppingItem } from './data';
-
-const CATEGORIES = ["Produce", "Dairy", "Meat", "Pantry", "Frozen", "Household", "Other"];
-
-export default function ShoppingList() {
+export default function ShoppingListPage() {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Add Item Form State
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState("1");
   const [newItemUnit, setNewItemUnit] = useState("pc");
-  const [newItemCat, setNewItemCat] = useState("Produce");
 
   const loadItems = async () => {
-    const data = await api.getShoppingList();
-    setItems(data);
+    setLoading(true);
+    try {
+      const data = await getShoppingList();
+      setItems(data);
+    } catch (err) {
+      console.error('Failed to load shopping list:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadItems();
   }, []);
 
-  const handleToggleItem = async (id: number) => {
-    await api.toggleShoppingItem(id);
-    loadItems();
+  const handleToggleItem = async (id: number, currentChecked: boolean) => {
+    try {
+      await toggleShoppingItemCheck(id, !currentChecked);
+      loadItems();
+    } catch (err) {
+      console.error('Failed to toggle item:', err);
+    }
   };
 
   const handleDeleteItem = async (id: number) => {
-    await api.deleteShoppingItem(id);
-    loadItems();
+    try {
+      await deleteShoppingItem(id);
+      loadItems();
+    } catch (err) {
+      console.error('Failed to delete item:', err);
+    }
   };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    await api.addShoppingItem({
-      name: newItemName,
-      quantity: parseFloat(newItemQty),
-      unit: newItemUnit,
-      category: newItemCat,
-      food_node_id: null
-    });
-    setShowAddModal(false);
-    setNewItemName("");
-    setNewItemQty("1");
-    loadItems();
-  };
-
-  const handleClearCompleted = async () => {
-    await api.clearCompletedShoppingItems();
-    loadItems();
+    try {
+      await addShoppingItem({
+        name_display: newItemName,
+        quantity: parseFloat(newItemQty),
+        unit: newItemUnit,
+      });
+      setShowAddModal(false);
+      setNewItemName("");
+      setNewItemQty("1");
+      loadItems();
+    } catch (err) {
+      console.error('Failed to add item:', err);
+    }
   };
 
   const handleMoveToPantry = async () => {
-    const checkedItems = items.filter(i => i.checked);
-    for (const item of checkedItems) {
-      await api.addToPantry({
-        food_node_id: item.food_node_id || 0, // 0 indicates unknown ingredient link
-        quantity: item.quantity,
-        unit: item.unit,
-        location: 'pantry',
-        expiration_date: null
-      });
+    const checkedItems = items.filter(i => i.is_checked);
+    try {
+      for (const item of checkedItems) {
+        await addInventoryItem({
+          ingredient_id: item.ingredient_id || 0, // Fallback if not linked
+          product_name: item.name_display,
+          quantity: item.quantity || 1,
+          unit: item.unit || 'pcs',
+          storage_location: 'pantry'
+        });
+        await deleteShoppingItem(item.id);
+      }
+      setShowMoveModal(false);
+      loadItems();
+    } catch (err) {
+      console.error('Failed to move items to pantry:', err);
     }
-    await api.clearCompletedShoppingItems();
-    setShowMoveModal(false);
-    loadItems();
   };
 
-  const checkedCount = items.filter(i => i.checked).length;
+  const checkedCount = items.filter(i => i.is_checked).length;
 
-  // Group items by category
-  const groupedItems = items.reduce((groups, item) => {
-    const category = item.category || "Other";
-    if (!groups[category]) {
-      groups[category] = [];
-    }
-    groups[category].push(item);
-    return groups;
-  }, {} as Record<string, ShoppingItem[]>);
-
-  const sortedCategories = Object.keys(groupedItems).sort();
+  const filteredItems = items.filter(item =>
+    item.name_display.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.source_label?.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Shopping List</h1>
-          <p className="text-slate-500">Categorized for a faster shopping trip.</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Shopping List</h1>
+          <p className="text-slate-500 mt-1">Smart, categorized, and synced with your kitchen inventory.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setShowAddModal(true)}>
-                <Plus size={18} /> Add Item
-            </Button>
-            {checkedCount > 0 && (
-                <>
-                    <Button variant="secondary" onClick={handleClearCompleted} className="text-slate-600">
-                        <Trash2 size={18} /> Clear {checkedCount} Done
-                    </Button>
-                    <Button onClick={() => setShowMoveModal(true)}>
-                        <ArrowRightCircle size={18} /> Move to Pantry
-                    </Button>
-                </>
-            )}
+        <div className="flex gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Input
+              placeholder="Search your list..."
+              className="pl-10 h-10 bg-white"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button onClick={() => setShowAddModal(true)} className="shadow-blue-100 shadow-lg bg-blue-600 hover:bg-blue-700">
+            <Plus size={18} />
+            <span className="hidden sm:inline">Add Item</span>
+          </Button>
         </div>
       </div>
 
-      {items.length === 0 ? (
-        <Card className="p-12 text-center text-slate-400 border-dashed">
-            <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium text-slate-600">Your list is empty</p>
-            <p>Add items to get started.</p>
-            <Button variant="secondary" className="mt-4 mx-auto" onClick={() => setShowAddModal(true)}>
-                Add First Item
-            </Button>
-        </Card>
+      {loading ? (
+        <div className="py-20 text-center">
+          <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400 font-medium">Updating list...</p>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="py-24 text-center bg-white border-2 border-dashed border-slate-200 rounded-3xl animate-in zoom-in duration-300">
+          <ShoppingBag size={64} className="mx-auto text-slate-200 mb-6 drop-shadow-sm" />
+          <h3 className="text-xl font-bold text-slate-900">Your list is clean!</h3>
+          <p className="text-slate-500 max-w-sm mx-auto mt-2">Add items manually or from your planned recipes to keep your kitchen stocked.</p>
+          <Button variant="secondary" className="mt-8 rounded-xl" onClick={() => setShowAddModal(true)}>
+            Add Items Now
+          </Button>
+        </div>
       ) : (
         <div className="space-y-6">
-            {sortedCategories.map(category => (
-                <div key={category}>
-                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 px-1">{category}</h3>
-                    <Card className="divide-y divide-slate-100 overflow-hidden">
-                        {groupedItems[category].map((item) => (
-                            <div 
-                                key={item.id} 
-                                className={`p-3 flex items-center justify-between group transition-colors ${item.checked ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
-                            >
-                                <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => handleToggleItem(item.id)}>
-                                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                                        item.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 bg-white'
-                                    }`}>
-                                        {item.checked && <Check size={12} strokeWidth={3} />}
-                                    </div>
-                                    <div>
-                                        <p className={`font-medium ${item.checked ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                                            {item.name}
-                                        </p>
-                                        <p className="text-xs text-slate-400">{item.quantity} {item.unit}</p>
-                                    </div>
-                                </div>
-                                
-                                <button 
-                                    onClick={() => handleDeleteItem(item.id)}
-                                    className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-2"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </div>
-                        ))}
-                    </Card>
+          <div className="flex justify-between items-center px-2">
+            <div className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest">
+              <ListChecks size={16} />
+              {items.length} Items
+            </div>
+            {checkedCount > 0 && (
+              <Button
+                size="sm"
+                onClick={() => setShowMoveModal(true)}
+                className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 border text-xs h-8 px-4 font-black"
+              >
+                <ArrowRightCircle size={14} className="mr-1.5" /> MOVE {checkedCount} TO PANTRY
+              </Button>
+            )}
+          </div>
+
+          <Card className="divide-y divide-slate-100 shadow-xl shadow-slate-200/40 p-0 overflow-hidden border-none rounded-2xl">
+            {filteredItems.map((item) => (
+              <div
+                key={item.id}
+                className={`p-4 flex items-center justify-between group transition-all duration-300 ${item.is_checked ? 'bg-slate-50/50' : 'hover:bg-blue-50/30'}`}
+              >
+                <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => handleToggleItem(item.id, item.is_checked)}>
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ${item.is_checked ? 'bg-blue-500 border-blue-500 text-white scale-110 shadow-md shadow-blue-100' : 'border-slate-200 bg-white group-hover:border-blue-400'
+                    }`}>
+                    {item.is_checked && <Check size={14} strokeWidth={4} />}
+                  </div>
+                  <div>
+                    <p className={`text-lg font-bold transition-all duration-300 ${item.is_checked ? 'text-slate-300 line-through italic' : 'text-slate-700'}`}>
+                      {item.name_display}
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <p className={`text-xs font-black uppercase tracking-tighter ${item.is_checked ? 'text-slate-300' : 'text-slate-400'}`}>
+                        {item.quantity} {item.unit}
+                      </p>
+                      {item.source_label && (
+                        <Badge color="blue" className="text-[10px] py-0 px-1.5 opacity-60">
+                          {item.source_label}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 </div>
+
+                <button
+                  onClick={() => handleDeleteItem(item.id)}
+                  className="text-slate-200 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-xl transition-all"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             ))}
+          </Card>
         </div>
       )}
 
       {/* Add Item Modal */}
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add to Shopping List">
-        <form onSubmit={handleAddItem} className="space-y-4">
-            <div>
-                <Label>Item Name</Label>
-                <Input 
-                    placeholder="e.g. Bananas" 
-                    value={newItemName} 
-                    onChange={(e) => setNewItemName(e.target.value)} 
-                    autoFocus
-                    required 
-                />
+        <form onSubmit={handleAddItem} className="space-y-5 py-2">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Item Name</label>
+            <Input
+              placeholder="e.g. Fresh Cilantro, Greek Yogurt..."
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              autoFocus
+              required
+              className="bg-slate-50 text-lg font-bold"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Quantity</label>
+              <Input
+                type="number"
+                step="0.1"
+                value={newItemQty}
+                onChange={(e) => setNewItemQty(e.target.value)}
+                required
+                className="bg-slate-50 font-black text-xl"
+              />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <Label>Quantity</Label>
-                    <Input type="number" step="0.1" value={newItemQty} onChange={(e) => setNewItemQty(e.target.value)} required />
-                </div>
-                <div>
-                    <Label>Unit</Label>
-                    <Input placeholder="e.g. bunch" value={newItemUnit} onChange={(e) => setNewItemUnit(e.target.value)} />
-                </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Unit</label>
+              <Input
+                placeholder="e.g. bunch, kg, packet"
+                value={newItemUnit}
+                onChange={(e) => setNewItemUnit(e.target.value)}
+                className="bg-slate-50 font-bold"
+              />
             </div>
-            <div>
-                <Label>Category</Label>
-                <select 
-                    className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    value={newItemCat}
-                    onChange={(e) => setNewItemCat(e.target.value)}
-                >
-                    {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                </select>
-            </div>
-            <div className="flex gap-3 pt-4">
-                <Button type="submit" className="flex-1">Add Item</Button>
-            </div>
+          </div>
+          <div className="flex gap-3 pt-6">
+            <Button variant="secondary" className="flex-1 rounded-xl" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button type="submit" className="flex-1 rounded-xl shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700">Add to List</Button>
+          </div>
         </form>
       </Modal>
 
       {/* Confirmation Modal */}
-      <Modal 
-        isOpen={showMoveModal} 
-        onClose={() => setShowMoveModal(false)} 
-        title="Update Inventory?"
+      <Modal
+        isOpen={showMoveModal}
+        onClose={() => setShowMoveModal(false)}
+        title="Sync with Kitchen"
       >
-        <div className="space-y-4">
-            <p className="text-slate-600">
-                You have marked <strong>{checkedCount} items</strong> as purchased. 
-                Would you like to move them to your <strong>My Kitchen</strong> inventory?
+        <div className="space-y-5">
+          <p className="text-slate-600 leading-relaxed font-medium">
+            You've checked <strong>{checkedCount} items</strong> today.
+            Ready to restock your digital kitchen?
+          </p>
+          <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex gap-4 items-start">
+            <div className="bg-emerald-500 rounded-full p-1 text-white mt-0.5">
+              <Check size={16} strokeWidth={4} />
+            </div>
+            <p className="text-sm text-emerald-800 font-bold">
+              Items will be added to your <span className="underline italic">Pantry</span> and removed from your shopping list automatically.
             </p>
-            <div className="bg-emerald-50 p-3 rounded-lg text-sm text-emerald-800">
-                Items will be added to the default "Pantry" location.
-            </div>
-            <div className="flex gap-3 pt-2">
-                <Button className="flex-1" onClick={handleMoveToPantry}>Yes, Move Items</Button>
-                <Button variant="secondary" onClick={() => setShowMoveModal(false)}>Cancel</Button>
-            </div>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <Button className="flex-2 rounded-xl h-12 text-lg" onClick={handleMoveToPantry}>Restock My Kitchen</Button>
+            <Button variant="secondary" className="flex-1 rounded-xl h-12" onClick={() => setShowMoveModal(false)}>Wait</Button>
+          </div>
         </div>
       </Modal>
     </div>
