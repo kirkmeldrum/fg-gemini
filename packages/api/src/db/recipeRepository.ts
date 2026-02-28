@@ -13,12 +13,24 @@ export async function find(params: {
     cuisine?: string;
     limit?: number;
     offset?: number;
+    userId?: number;
+    visibility?: 'all' | 'public' | 'private';
 }) {
-    const { query, cuisine, limit = 20, offset = 0 } = params;
+    const { query, cuisine, limit = 20, offset = 0, userId, visibility = 'public' } = params;
 
-    const q = db('recipes')
-        .where({ privacy: 'public' })
-        .andWhere('deleted_at', null);
+    const q = db('recipes').where('deleted_at', null);
+
+    if (visibility === 'public') {
+        q.where('privacy', 'public');
+    } else if (visibility === 'private' && userId) {
+        q.where({ privacy: 'private', author_id: userId });
+    } else if (visibility === 'all' && userId) {
+        q.where(function () {
+            this.where('privacy', 'public').orWhere('author_id', userId);
+        });
+    } else {
+        q.where('privacy', 'public');
+    }
 
     if (query) {
         q.andWhere((builder) => {
@@ -117,10 +129,19 @@ export async function create(data: any, ingredients: any[], steps: any[]) {
 }
 
 /**
+ * Update recipe privacy
+ */
+export async function updatePrivacy(id: number, privacy: 'public' | 'private' | 'friends') {
+    return db('recipes')
+        .where({ id })
+        .update({ privacy, updated_at: db.fn.now() });
+}
+
+/**
  * Soft delete a recipe
  */
 export async function softDelete(id: number) {
     return db('recipes')
         .where({ id })
-        .update({ deleted_at: db.fn.now() });
+        .update({ deleted_at: db.fn.now(), updated_at: db.fn.now() });
 }

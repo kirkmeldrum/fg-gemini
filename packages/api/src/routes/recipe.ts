@@ -9,6 +9,7 @@
 
 import { Router, type IRouter, Request, Response, NextFunction } from 'express';
 import * as recipeRepo from '../db/recipeRepository.js';
+import { socialRepository } from '../db/socialRepository.js';
 import { requireAuth } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 
@@ -73,6 +74,11 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
         const recipeId = await recipeRepo.create(recipeData, ingredients, steps);
         const recipe = await recipeRepo.findById(recipeId);
 
+        // Log activity if public
+        if (recipeData.privacy === 'public') {
+            await socialRepository.logActivity(recipeData.author_id, 'posted_recipe', recipeId, 'recipe');
+        }
+
         res.status(201).json({
             success: true,
             data: recipe,
@@ -106,6 +112,39 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response, next: Nex
             success: true,
             data: null,
             message: 'Recipe deleted successfully',
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// ============================================
+// PATCH /:id/privacy   — update recipe privacy
+// ============================================
+router.patch('/:id/privacy', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const idParam = req.params.id as string;
+        const recipeId = parseInt(idParam);
+        const { privacy } = req.body;
+
+        if (!['public', 'private', 'friends'].includes(privacy)) {
+            throw new AppError(400, 'BAD_REQUEST', 'Invalid privacy setting');
+        }
+
+        const recipe = await recipeRepo.findById(recipeId);
+        if (!recipe) {
+            throw new AppError(404, 'NOT_FOUND', 'Recipe not found');
+        }
+
+        if (recipe.author_id !== req.user!.id && req.user!.role !== 'admin') {
+            throw new AppError(403, 'FORBIDDEN', 'You do not have permission to update this recipe');
+        }
+
+        await recipeRepo.updatePrivacy(recipeId, privacy);
+
+        res.json({
+            success: true,
+            message: `Recipe privacy updated to ${privacy}`,
         });
     } catch (err) {
         next(err);

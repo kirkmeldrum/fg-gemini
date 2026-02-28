@@ -1,0 +1,44 @@
+
+> @foodgenie/web@0.1.0 build
+> tsc -b && vite build
+
+src/data/mockData.ts(639,23): error TS6133: 'userId' is declared but its value is never read.
+src/data/mockData.ts(658,18): error TS6133: 'imageBlob' is declared but its value is never read.
+src/data/mockData.ts(681,15): error TS6133: 'imageBlob' is declared but its value is never read.
+src/pages/AddRecipePage.tsx(4,45): error TS6133: 'Upload' is declared but its value is never read.
+src/pages/AddRecipePage.tsx(15,23): error TS6133: 'setRecipeImage' is declared but its value is never read.
+src/pages/DashboardPage.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/DashboardPage.tsx(6,21): error TS6133: 'BookOpen' is declared but its value is never read.
+src/pages/DashboardPage.tsx(8,85): error TS6133: 'PantryItem' is declared but its value is never read.
+src/pages/DashboardPage.tsx(8,104): error TS6133: 'api' is declared but its value is never read.
+src/pages/FoodEncyclopediaPage.tsx(3,57): error TS6133: 'ArrowLeft' is declared but its value is never read.
+src/pages/FoodEncyclopediaPage.tsx(3,90): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/pages/FoodEncyclopediaPage.tsx(3,147): error TS6133: 'Filter' is declared but its value is never read.
+src/pages/FoodEncyclopediaPage.tsx(4,31): error TS6133: 'Modal' is declared but its value is never read.
+src/pages/FoodEncyclopediaPage.tsx(54,32): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/FoodEncyclopediaPage.tsx(143,31): error TS6133: 'idx' is declared but its value is never read.
+src/pages/MealPlannerPage.tsx(3,10): error TS6133: 'CalendarDays' is declared but its value is never read.
+src/pages/MealPlannerPage.tsx(3,63): error TS6133: 'MoreHorizontal' is declared but its value is never read.
+src/pages/MealPlannerPage.tsx(3,79): error TS6133: 'X' is declared but its value is never read.
+src/pages/MealPlannerPage.tsx(4,52): error TS6133: 'TextArea' is declared but its value is never read.
+src/pages/MealPlannerPage.tsx(5,37): error TS6133: 'RECIPES' is declared but its value is never read.
+src/pages/RecipeIndexerPage.tsx(3,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/RecipeIndexerPage.tsx(4,10): error TS6133: 'Camera' is declared but its value is never read.
+src/pages/RecipeIndexerPage.tsx(5,1): error TS6133: 'Button' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(3,8): error TS6133: 'React' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(3,38): error TS6133: 'useRef' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(5,5): error TS6133: 'Camera' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(5,27): error TS6133: 'ShoppingCart' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(5,41): error TS6133: 'Info' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(6,5): error TS6133: 'Utensils' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(6,15): error TS6133: 'FileText' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(7,5): error TS6133: 'Maximize' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(7,15): error TS6133: 'Search' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(7,37): error TS6133: 'AlertCircle' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(7,50): error TS6133: 'ArrowRight' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(9,18): error TS6133: 'Badge' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(9,32): error TS6133: 'Card' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(10,25): error TS6133: 'PantryItem' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(27,10): error TS6133: 'videoRef' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(27,20): error TS6133: 'setVideoRef' is declared but its value is never read.
+src/pages/SmartScannerPage.tsx(109,43): error TS7006: Parameter 'sl' implicitly has an 'any' type.

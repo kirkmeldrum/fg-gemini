@@ -1,314 +1,446 @@
 
-import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, Heart, MessageCircle, Share2, MoreHorizontal, ChefHat, Search, Mail, Send } from 'lucide-react';
-import { Card, Button, Badge, Modal, Input, Label } from './components';
-import { api, Friend, Activity, USERS, FRIENDS, User } from './data';
+import { useState, useEffect } from 'react';
+import {
+    Users, UserPlus, Heart, MessageCircle, Share2,
+    MoreHorizontal, ChefHat, Search, Bell, Check, X, User as UserIcon
+} from 'lucide-react';
+import {
+    Card, Button, Badge,
+} from '../components/ui';
+import * as api from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function SocialNetwork() {
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const currentUser = USERS[0];
+    const { user: currentUser } = useAuth();
+    const [friends, setFriends] = useState<api.SocialFriend[]>([]);
+    const [requests, setRequests] = useState<api.FriendRequest[]>([]);
+    const [activities, setActivities] = useState<api.Activity[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-  // Invite Modal State
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [activeInviteTab, setActiveInviteTab] = useState<'search' | 'email'>('search');
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [sentInvites, setSentInvites] = useState<number[]>([]); // Track IDs of sent requests
+    // Invite Modal State
+    const [isInviteOpen, setIsInviteOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<api.ApiUser[]>([]);
+    const [sentRequests, setSentRequests] = useState<number[]>([]);
 
-  useEffect(() => {
-    api.getFriends().then(setFriends);
-    api.getActivities().then(setActivities);
-  }, []);
+    useEffect(() => {
+        loadSocialData();
+    }, []);
 
-  const pendingRequests = friends.filter(f => f.status === 'pending_incoming');
-  const connectedFriends = friends.filter(f => f.status === 'connected');
+    const loadSocialData = async () => {
+        setIsLoading(true);
+        try {
+            const [friendsData, requestsData, feedData] = await Promise.all([
+                api.getFriends(),
+                api.getPendingRequests(),
+                api.getSocialFeed()
+            ]);
+            setFriends(friendsData);
+            setRequests(requestsData);
+            setActivities(feedData);
+        } catch (error) {
+            console.error('Failed to load social data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const handleSearch = async () => {
-    if (searchQuery.trim().length > 0) {
-        const results = await api.searchUsers(searchQuery);
-        // Filter out existing friends
-        const friendIds = friends.map(f => f.id);
-        const filtered = results.filter(u => !friendIds.includes(u.id));
-        setSearchResults(filtered);
-    } else {
-        setSearchResults([]);
-    }
-  };
+    const handleSearch = async () => {
+        if (!searchQuery.trim()) return;
+        try {
+            const results = await api.searchUsers(searchQuery);
+            // Filter out current user and existing friends
+            const friendIds = friends.map(f => f.id);
+            const filtered = results.filter(u => u.id !== currentUser?.id && !friendIds.includes(u.id));
+            setSearchResults(filtered);
+        } catch (error) {
+            console.error('Search failed:', error);
+        }
+    };
 
-  const handleSendRequest = async (userId: number) => {
-    await api.sendFriendRequest(userId);
-    setSentInvites([...sentInvites, userId]);
-  };
+    const handleSendRequest = async (userId: number) => {
+        try {
+            await api.sendFriendRequest(userId);
+            setSentRequests([...sentRequests, userId]);
+        } catch (error) {
+            console.error('Failed to send request:', error);
+        }
+    };
 
-  const handleEmailInvite = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert(`Invitation sent to ${inviteEmail}!`);
-    setInviteEmail("");
-    setIsInviteModalOpen(false);
-  };
+    const handleAcceptRequest = async (friendId: number) => {
+        try {
+            await api.acceptFriendRequest(friendId);
+            loadSocialData();
+        } catch (error) {
+            console.error('Failed to accept request:', error);
+        }
+    };
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Left Column: Feed */}
-      <div className="lg:col-span-2 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Activity Feed</h1>
-          <p className="text-slate-500">See what your network is cooking up.</p>
-        </div>
+    const mapActionToText = (activity: api.Activity) => {
+        const name = `${activity.first_name || activity.username}`;
+        switch (activity.action) {
+            case 'posted_recipe':
+                return <span><strong>{name}</strong> shared a new recipe</span>;
+            case 'rated_recipe':
+                return <span><strong>{name}</strong> rated a recipe</span>;
+            case 'cooked_meal':
+                return <span><strong>{name}</strong> cooked a delicious meal</span>;
+            case 'followed_user':
+                return <span><strong>{name}</strong> started following someone</span>;
+            default:
+                return <span><strong>{name}</strong> did something interesting</span>;
+        }
+    };
 
-        {/* Share Box */}
-        <Card className="p-4">
-          <div className="flex gap-4">
-            <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
-                <img src={currentUser.avatar} alt={currentUser.name} />
-            </div>
-            <div className="flex-1">
-              <input 
-                type="text" 
-                placeholder="Share a recipe, tip, or food photo..." 
-                className="w-full bg-slate-50 border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-3"
-              />
-              <div className="flex justify-between items-center">
-                <div className="flex gap-2">
-                    <Button variant="ghost" className="text-xs px-2"><ChefHat size={14} className="mr-1"/> Share Recipe</Button>
-                </div>
-                <Button className="px-6 py-1.5 text-sm">Post</Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Feed Items */}
-        <div className="space-y-6">
-          {activities.map(activity => {
-            const author = FRIENDS.find(f => f.id === activity.user_id) || USERS[0]; // Fallback logic for mock
-            
-            return (
-              <Card key={activity.id} className="p-0 overflow-visible">
-                <div className="p-5">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
-                        <img src={author.avatar} alt={author.name} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-900">{author.name}</p>
-                        <p className="text-xs text-slate-500">{activity.timestamp}</p>
-                      </div>
-                    </div>
-                    <button className="text-slate-400 hover:text-slate-600">
-                      <MoreHorizontal size={20} />
-                    </button>
-                  </div>
-
-                  <div className="mb-4">
-                    <p className="text-sm text-slate-600 mb-2">
-                        <span className="font-medium text-emerald-600">{activity.type.replace('_', ' ')}:</span> {activity.title}
-                    </p>
-                    <p className="text-slate-800">{activity.description}</p>
-                  </div>
-
-                  {activity.image && (
-                    <div className="rounded-xl overflow-hidden mb-4 border border-slate-100">
-                        <img src={activity.image} alt="Post content" className="w-full h-64 object-cover" />
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-6 pt-4 border-t border-slate-100">
-                    <button className="flex items-center gap-2 text-slate-500 hover:text-red-500 transition-colors text-sm font-medium">
-                        <Heart size={18} /> {activity.likes}
-                    </button>
-                    <button className="flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors text-sm font-medium">
-                        <MessageCircle size={18} /> {activity.comments}
-                    </button>
-                    <button className="flex items-center gap-2 text-slate-500 hover:text-emerald-500 transition-colors text-sm font-medium ml-auto">
-                        <Share2 size={18} /> Share
-                    </button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Right Column: Sidebar */}
-      <div className="space-y-6">
-        
-        {/* Profile Card */}
-        <Card className="p-6 text-center">
-            <div className="w-20 h-20 rounded-full bg-slate-200 overflow-hidden mx-auto mb-4 border-4 border-white shadow-md">
-                <img src={currentUser.avatar} alt={currentUser.name} />
-            </div>
-            <h2 className="font-bold text-lg text-slate-800">{currentUser.name}</h2>
-            <p className="text-sm text-slate-500 mb-4">Master Chef in Training</p>
-            <div className="flex justify-center gap-4 text-sm border-t border-slate-100 pt-4">
+    return (
+        <div className="max-w-6xl mx-auto px-4 py-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <span className="block font-bold text-slate-900">142</span>
-                    <span className="text-slate-500">Recipes</span>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Social Network</h1>
+                    <p className="text-slate-500 mt-1 text-lg">See what your kitchen community is cooking up.</p>
                 </div>
-                <div>
-                    <span className="block font-bold text-slate-900">{connectedFriends.length}</span>
-                    <span className="text-slate-500">Friends</span>
-                </div>
-            </div>
-        </Card>
 
-        {/* Friend Requests */}
-        {pendingRequests.length > 0 && (
-            <Card className="p-5">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <UserPlus size={18} className="text-emerald-600" /> 
-                Requests <Badge color="red">{pendingRequests.length}</Badge>
-            </h3>
-            <div className="space-y-4">
-                {pendingRequests.map(req => (
-                    <div key={req.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
-                                <img src={req.avatar} alt={req.name} />
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-slate-900">{req.name}</p>
-                                <p className="text-xs text-slate-500">{req.mutual_friends} mutual friends</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-1">
-                            <Button className="px-3 py-1 text-xs">Accept</Button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-            </Card>
-        )}
-
-        {/* My Friends */}
-        <Card className="p-5">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                    <Users size={18} className="text-emerald-600" /> My Network
-                </h3>
-                <div className="flex gap-2">
-                    <Button variant="ghost" className="p-1 h-8 w-8 text-emerald-600" onClick={() => setIsInviteModalOpen(true)}>
-                        <UserPlus size={18} />
+                <div className="flex gap-3">
+                    <Button
+                        variant="outline"
+                        className="rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                        onClick={loadSocialData}
+                    >
+                        <Bell size={18} />
+                        {requests.length > 0 && (
+                            <span className="bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full animate-pulse">
+                                {requests.length}
+                            </span>
+                        )}
+                        Notifications
+                    </Button>
+                    <Button
+                        className="bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-lg shadow-emerald-200 rounded-full px-6 transition-all transform hover:-translate-y-0.5"
+                        onClick={() => setIsInviteOpen(true)}
+                    >
+                        <UserPlus size={18} className="mr-2" />
+                        Find Chefs
                     </Button>
                 </div>
             </div>
-            <div className="space-y-4">
-                {connectedFriends.map(friend => (
-                    <div key={friend.id} className="flex items-center justify-between group cursor-pointer hover:bg-slate-50 p-2 rounded-lg -mx-2 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden relative">
-                                <img src={friend.avatar} alt={friend.name} />
-                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-slate-900 group-hover:text-emerald-700 transition-colors">{friend.name}</p>
-                                <p className="text-xs text-slate-500">Online now</p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-                {connectedFriends.length === 0 && (
-                    <p className="text-sm text-slate-500 text-center py-4">No connections yet.</p>
-                )}
-            </div>
-            <Button variant="secondary" className="w-full mt-4 text-sm" onClick={() => setIsInviteModalOpen(true)}>Find Chefs</Button>
-        </Card>
-      </div>
 
-      {/* Find & Invite Modal */}
-      <Modal 
-        isOpen={isInviteModalOpen} 
-        onClose={() => setIsInviteModalOpen(false)} 
-        title="Grow Your Network"
-      >
-        <div className="space-y-6">
-            <div className="flex border-b border-slate-200">
-                <button 
-                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeInviteTab === 'search' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                    onClick={() => setActiveInviteTab('search')}
-                >
-                    Find Chefs
-                </button>
-                <button 
-                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeInviteTab === 'email' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                    onClick={() => setActiveInviteTab('email')}
-                >
-                    Invite by Email
-                </button>
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Left Column: Feed (8 cols) */}
+                <div className="lg:col-span-8 space-y-6">
 
-            {activeInviteTab === 'search' ? (
-                <div className="space-y-4">
-                    <div className="flex gap-2">
-                        <div className="relative flex-1">
-                            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input 
-                                type="text" 
-                                placeholder="Search by name..." 
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            />
-                        </div>
-                        <Button onClick={handleSearch}>Search</Button>
-                    </div>
-
-                    <div className="max-h-64 overflow-y-auto space-y-3">
-                        {searchResults.length > 0 ? (
-                            searchResults.map(user => (
-                                <div key={user.id} className="flex items-center justify-between p-2 border border-slate-100 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
-                                            <img src={user.avatar} alt={user.name} />
-                                        </div>
-                                        <span className="font-medium text-slate-800">{user.name}</span>
+                    {/* Share Block */}
+                    <Card className="p-6 bg-white/50 backdrop-blur-sm border-emerald-50 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex gap-4">
+                            <div className="w-12 h-12 rounded-full overflow-hidden bg-emerald-100 flex-shrink-0 ring-2 ring-white shadow-sm">
+                                {currentUser?.avatarUrl ? (
+                                    <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-emerald-600 font-bold bg-emerald-50">
+                                        {currentUser?.username?.[0].toUpperCase()}
                                     </div>
-                                    {sentInvites.includes(user.id) ? (
-                                        <Badge color="slate">Sent</Badge>
-                                    ) : (
-                                        <Button variant="secondary" className="px-3 py-1 text-xs" onClick={() => handleSendRequest(user.id)}>
-                                            Connect
-                                        </Button>
-                                    )}
+                                )}
+                            </div>
+                            <div className="flex-1">
+                                <textarea
+                                    placeholder="Share your latest culinary triumph..."
+                                    className="w-full bg-slate-50/50 border-0 focus:ring-0 rounded-xl p-4 text-slate-800 placeholder:text-slate-400 min-h-[100px] resize-none text-sm transition-all shadow-inner"
+                                />
+                                <div className="mt-2 flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                                    <div className="flex gap-2">
+                                        <button className="p-2 text-slate-500 hover:text-emerald-600 transition-colors rounded-lg hover:bg-emerald-50">
+                                            <ChefHat size={18} />
+                                        </button>
+                                        <button className="p-2 text-slate-500 hover:text-emerald-600 transition-colors rounded-lg hover:bg-emerald-50">
+                                            <Share2 size={18} />
+                                        </button>
+                                    </div>
+                                    <Button className="px-6 rounded-full text-sm font-semibold">Post</Button>
                                 </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Feed Content */}
+                    <div className="space-y-6">
+                        {isLoading ? (
+                            Array(3).fill(0).map((_, i) => (
+                                <Card key={i} className="p-6 animate-pulse border-slate-100">
+                                    <div className="flex gap-4 mb-4">
+                                        <div className="w-10 h-10 bg-slate-200 rounded-full" />
+                                        <div className="flex-1 space-y-2">
+                                            <div className="h-4 bg-slate-200 rounded w-1/4" />
+                                            <div className="h-3 bg-slate-100 rounded w-1/6" />
+                                        </div>
+                                    </div>
+                                    <div className="h-20 bg-slate-50 rounded-xl mb-4" />
+                                </Card>
                             ))
-                        ) : searchQuery && (
-                            <p className="text-center text-sm text-slate-500 py-4">No chefs found matching "{searchQuery}"</p>
-                        )}
-                        {!searchQuery && (
-                            <p className="text-center text-sm text-slate-400 py-4">Search for FoodGenie users to connect.</p>
+                        ) : activities.length > 0 ? (
+                            activities.map(activity => (
+                                <Card key={activity.id} className="p-0 overflow-hidden border-slate-100/50 shadow-sm hover:shadow-lg transition-all duration-300 group">
+                                    <div className="p-6">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-100 ring-2 ring-white shadow-sm group-hover:ring-emerald-100 transition-all">
+                                                    {activity.avatar_url ? (
+                                                        <img src={activity.avatar_url} alt={activity.username} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center bg-emerald-50 text-emerald-600 text-sm font-bold">
+                                                            {activity.username[0].toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-900 hover:text-emerald-700 transition-colors cursor-pointer">
+                                                        {activity.first_name || activity.username}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                                                        <span>{new Date(activity.created_at).toLocaleDateString()}</span>
+                                                        <span>•</span>
+                                                        <span className="capitalize">{activity.action.replace('_', ' ')}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Button variant="ghost" className="p-2 h-9 w-9 rounded-full text-slate-400">
+                                                <MoreHorizontal size={18} />
+                                            </Button>
+                                        </div>
+
+                                        <div className="mb-5 pl-1">
+                                            <div className="text-slate-800 leading-relaxed text-[15px]">
+                                                {mapActionToText(activity)}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-6 pt-4 border-t border-slate-100">
+                                            <button className="flex items-center gap-1.5 text-slate-500 hover:text-red-500 transition-colors text-xs font-semibold uppercase tracking-wider">
+                                                <Heart size={16} /> Like
+                                            </button>
+                                            <button className="flex items-center gap-1.5 text-slate-500 hover:text-emerald-600 transition-colors text-xs font-semibold uppercase tracking-wider">
+                                                <MessageCircle size={16} /> Comment
+                                            </button>
+                                            <button className="ml-auto flex items-center gap-1.5 text-slate-500 hover:text-emerald-600 transition-colors text-xs font-semibold uppercase tracking-wider">
+                                                <Share2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="text-center py-20 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200">
+                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                                    <Users size={32} />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-700">No activity yet</h3>
+                                <p className="text-slate-400 max-w-xs mx-auto mt-2 text-sm">Follow your friends to see what they're cooking up and share your own recipes!</p>
+                                <Button
+                                    variant="secondary"
+                                    className="mt-6 rounded-full"
+                                    onClick={() => setIsInviteOpen(true)}
+                                >
+                                    Find People to Follow
+                                </Button>
+                            </div>
                         )}
                     </div>
                 </div>
-            ) : (
-                <form onSubmit={handleEmailInvite} className="space-y-4">
-                    <p className="text-sm text-slate-600">Invite your friends to join FoodGenie and share recipes together!</p>
-                    <div>
-                        <Label>Email Address</Label>
-                        <div className="relative">
-                            <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <Input 
-                                type="email" 
-                                placeholder="friend@example.com" 
-                                className="pl-10"
-                                value={inviteEmail}
-                                onChange={(e) => setInviteEmail(e.target.value)}
-                                required
-                            />
+
+                {/* Right Column: Sidebar (4 cols) */}
+                <div className="lg:col-span-4 space-y-8">
+
+                    {/* Incoming Requests */}
+                    {requests.length > 0 && (
+                        <div className="rounded-3xl bg-amber-50/70 border border-amber-100 p-6 shadow-sm overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                                <Bell size={64} className="text-amber-600" />
+                            </div>
+                            <h3 className="font-bold text-amber-900 mb-4 flex items-center gap-2 relative z-10">
+                                <UserPlus size={18} />
+                                Requests <Badge className="bg-amber-500 ml-auto">{requests.length}</Badge>
+                            </h3>
+                            <div className="space-y-4 relative z-10">
+                                {requests.map(req => (
+                                    <div key={req.connection_id} className="flex items-center gap-3 bg-white/50 p-3 rounded-2xl border border-white/50 shadow-sm">
+                                        <div className="w-10 h-10 rounded-full bg-amber-200 overflow-hidden">
+                                            {req.avatar_url ? (
+                                                <img src={req.avatar_url} alt={req.username} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-amber-100 text-amber-700 font-bold">
+                                                    {req.username[0]}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-amber-950 truncate">{req.first_name || req.username}</p>
+                                            <p className="text-[10px] text-amber-700 font-medium">@{req.username}</p>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <button
+                                                className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 shadow-md shadow-emerald-200 transition-all"
+                                                onClick={() => handleAcceptRequest(req.id)}
+                                            >
+                                                <Check size={16} />
+                                            </button>
+                                            <button className="p-1.5 bg-slate-100 text-slate-400 rounded-lg hover:bg-white hover:text-red-500 transition-all">
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Friends List */}
+                    <Card className="p-6 rounded-3xl border-slate-100 shadow-sm overflow-hidden group">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                                <Users size={18} className="text-emerald-600" /> My Network
+                            </h3>
+                            <span className="text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-full">
+                                {friends.length}
+                            </span>
+                        </div>
+
+                        <div className="space-y-4">
+                            {friends.length > 0 ? (
+                                friends.map(friend => (
+                                    <div key={friend.id} className="flex items-center gap-4 p-2 hover:bg-slate-50 rounded-2xl transition-all cursor-pointer group/item">
+                                        <div className="relative">
+                                            <div className="w-11 h-11 rounded-full bg-slate-100 overflow-hidden ring-2 ring-white shadow-sm group-hover/item:ring-emerald-100 transition-all">
+                                                {friend.avatar_url ? (
+                                                    <img src={friend.avatar_url} alt={friend.username} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold bg-slate-200">
+                                                        {friend.username[0]}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-slate-900 group-hover/item:text-emerald-700 transition-colors">
+                                                {friend.first_name || friend.username}
+                                            </p>
+                                            <p className="text-[11px] text-slate-400 font-medium">@{friend.username}</p>
+                                        </div>
+                                        <button className="opacity-0 group-hover/item:opacity-100 p-2 text-slate-300 hover:text-emerald-500 transition-all">
+                                            <MessageCircle size={16} />
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-6">
+                                    <p className="text-sm text-slate-400 italic">No connections yet.</p>
+                                    <Button
+                                        variant="ghost"
+                                        className="text-xs text-emerald-600 mt-2 hover:bg-emerald-50 rounded-full"
+                                        onClick={() => setIsInviteOpen(true)}
+                                    >
+                                        <Search size={14} className="mr-1" /> Browse Chefs
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+
+                    {/* Cooking Tips/Stats */}
+                    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 rounded-3xl p-8 text-white shadow-xl shadow-slate-200 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl group-hover:bg-emerald-500/30 transition-all"></div>
+                        <h4 className="text-emerald-400 font-extrabold text-xs uppercase tracking-widest mb-2">Community Goal</h4>
+                        <p className="text-xl font-bold leading-tight">Together we saved over <span className="text-emerald-400">4,200kg</span> of food waste this month!</p>
+                        <div className="mt-8 pt-8 border-t border-white/10 flex justify-between items-center text-sm font-medium">
+                            <span className="text-slate-400 italic">You helped save 12kg</span>
+                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                                <ChefHat size={16} />
+                            </div>
                         </div>
                     </div>
-                    <Button type="submit" className="w-full">
-                        <Send size={16} className="mr-2" /> Send Invitation
-                    </Button>
-                </form>
+                </div>
+            </div>
+
+            {/* Discovery Modal */}
+            {isInviteOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100">
+                        <div className="p-8 bg-gradient-to-br from-slate-50 to-white flex justify-between items-center border-b border-slate-100">
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-900">Discover Chefs</h2>
+                                <p className="text-slate-500 text-sm mt-1">Search the FoodGenie community</p>
+                            </div>
+                            <button
+                                className="p-2 hover:bg-slate-100 rounded-2xl transition-colors text-slate-400"
+                                onClick={() => setIsInviteOpen(false)}
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="p-8">
+                            <div className="relative mb-8">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                                <input
+                                    type="text"
+                                    placeholder="Type a name or username..."
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all outline-none"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                />
+                            </div>
+
+                            <div className="space-y-4 max-h-[40vh] overflow-y-auto px-1">
+                                {searchResults.length > 0 ? (
+                                    searchResults.map(u => (
+                                        <div key={u.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-2xl transition-all border border-transparent hover:border-slate-100">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden shadow-sm">
+                                                    {u.avatarUrl ? (
+                                                        <img src={u.avatarUrl} alt={u.username} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold bg-slate-100">
+                                                            {u.username[0]}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-900">{u.displayName || u.username}</p>
+                                                    <p className="text-xs text-slate-400">@{u.username}</p>
+                                                </div>
+                                            </div>
+                                            {sentRequests.includes(u.id) ? (
+                                                <Badge className="bg-slate-100 text-slate-500 border-0">Sent</Badge>
+                                            ) : (
+                                                <Button
+                                                    variant="secondary"
+                                                    className="px-4 py-1.5 text-xs rounded-full"
+                                                    onClick={() => handleSendRequest(u.id)}
+                                                >
+                                                    Connect
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ))
+                                ) : searchQuery && (
+                                    <div className="text-center py-10">
+                                        <UserIcon size={48} className="mx-auto text-slate-200 mb-4" />
+                                        <p className="text-slate-400 italic text-sm">No chefs found matching "{searchQuery}"</p>
+                                    </div>
+                                )}
+                                {!searchQuery && (
+                                    <div className="text-center py-10">
+                                        <UserIcon size={48} className="mx-auto text-slate-100 mb-4 opacity-50" />
+                                        <p className="text-slate-400 italic text-sm">Search for FoodGenie users to connect.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="p-6 bg-slate-50 flex gap-4">
+                            <Button variant="outline" className="flex-1 rounded-2xl" onClick={() => setIsInviteOpen(false)}>Cancel</Button>
+                            <Button className="flex-1 rounded-2xl shadow-lg shadow-emerald-100">Invite via Email</Button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
-      </Modal>
-    </div>
-  );
+    );
 }

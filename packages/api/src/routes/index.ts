@@ -26,6 +26,10 @@ apiRoutes.use('/ingredients', ingredientRoutes);
 apiRoutes.use('/inventory', inventoryRoutes);
 apiRoutes.use('/shopping', shoppingRoutes);
 
+// Sprint 1.5: Social & Community
+import socialRoutes from './social.js';
+apiRoutes.use('/social', socialRoutes);
+
 // Sprint 1.6: Smart Search routes
 // apiRoutes.use('/search', searchRoutes);
 

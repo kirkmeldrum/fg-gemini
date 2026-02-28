@@ -4,7 +4,8 @@ import {
     Heart, Calendar, ShoppingCart, CheckCircle2
 } from 'lucide-react';
 import { Card, Button } from './components';
-import { getRecipeBySlug, addFromRecipe, RecipeDetail as IRecipeDetail } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { getRecipeBySlug, addFromRecipe, updateRecipePrivacy, RecipeDetail as IRecipeDetail } from '../lib/api';
 
 interface RecipeDetailProps {
     slug: string;
@@ -12,6 +13,7 @@ interface RecipeDetailProps {
 }
 
 export default function RecipeDetail({ slug, onBack }: RecipeDetailProps) {
+    const { user } = useAuth();
     const [recipe, setRecipe] = useState<IRecipeDetail | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -47,6 +49,17 @@ export default function RecipeDetail({ slug, onBack }: RecipeDetailProps) {
             console.error('Failed to add ingredients to shop:', err);
         } finally {
             setIsShopping(false);
+        }
+    };
+
+    const handleTogglePrivacy = async () => {
+        if (!recipe) return;
+        const newPrivacy = recipe.privacy === 'public' ? 'private' : 'public';
+        try {
+            await updateRecipePrivacy(recipe.id, newPrivacy);
+            setRecipe({ ...recipe, privacy: newPrivacy });
+        } catch (err) {
+            console.error('Failed to update privacy:', err);
         }
     };
 
@@ -92,7 +105,15 @@ export default function RecipeDetail({ slug, onBack }: RecipeDetailProps) {
                         <span className="text-sm text-slate-500">(0 reviews)</span>
                         <span className="text-slate-300 mx-2">|</span>
                         <div className="flex items-center gap-2 text-sm text-slate-600">
-                            by Admin
+                            by {recipe.author_id === user?.id ? 'You' : 'Admin'}
+                            {recipe.author_id === user?.id && (
+                                <button
+                                    onClick={handleTogglePrivacy}
+                                    className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${recipe.privacy === 'public' ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100'}`}
+                                >
+                                    {recipe.privacy}
+                                </button>
+                            )}
                         </div>
                     </div>
 

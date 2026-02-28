@@ -6,19 +6,11 @@ import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError, ForbiddenError } from './errorHandler.js';
 
 // Extend Express Request to include user
+import { User as SharedUser } from '@foodgenie/shared';
+
 declare global {
     namespace Express {
-        interface User {
-            id: number;
-            email: string;
-            username: string;
-            firstName: string;
-            lastName: string;
-            displayName: string | null;
-            avatarUrl: string | null;
-            role: 'user' | 'contributor' | 'vendor' | 'admin';
-            household_id: number | null;
-        }
+        interface User extends SharedUser { }
     }
 }
 

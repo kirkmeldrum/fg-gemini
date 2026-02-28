@@ -14,7 +14,8 @@ export interface User {
     bio: string | null;
     location: string | null;
     avatarUrl: string | null;
-    role: 'user' | 'admin';
+    role: 'user' | 'contributor' | 'vendor' | 'admin';
+    householdId: number | null;
     isDeleted: boolean;
     createdAt: string;
     updatedAt: string;
@@ -245,4 +246,27 @@ export interface SmartSearchResult extends Recipe {
     coveragePercentage: number;
     matchedIngredients: string[];
     missingIngredients: string[];
+}
+
+// ---- Social & Community ----
+
+export interface SocialActivity {
+    id: number;
+    userId: number;
+    username: string;
+    displayName?: string | null;
+    avatarUrl: string | null;
+    action: 'posted_recipe' | 'rated_recipe' | 'cooked_meal' | 'followed_user';
+    targetId: number | null;
+    targetType: 'recipe' | 'user' | 'meal_plan' | null;
+    payload: string | null;
+    createdAt: string;
+}
+
+export interface FriendConnection {
+    id: number;
+    userId: number;
+    username: string;
+    avatarUrl: string | null;
+    status: 'pending' | 'accepted' | 'blocked';
 }

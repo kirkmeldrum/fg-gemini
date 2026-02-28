@@ -11,7 +11,7 @@ const router: IRouter = Router();
 router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!.id;
-        const householdId = req.user!.household_id;
+        const householdId = req.user!.householdId;
 
         const results = await inventoryRepo.list(userId, householdId);
 
@@ -33,7 +33,7 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
 
         // Ensure user_id/household_id are set from session
         itemData.user_id = req.user!.id;
-        itemData.household_id = req.user!.household_id;
+        itemData.household_id = req.user!.householdId;
 
         const itemId = await inventoryRepo.add(itemData);
         const item = await inventoryRepo.findById(itemId);
@@ -61,7 +61,7 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response, next: Next
         }
 
         // Check ownership
-        if (existing.user_id !== req.user!.id && existing.household_id !== req.user!.household_id) {
+        if (existing.user_id !== req.user!.id && existing.household_id !== req.user!.householdId) {
             throw new AppError(403, 'FORBIDDEN', 'Access denied');
         }
 
@@ -91,7 +91,7 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response, next: Nex
         }
 
         // Check ownership
-        if (existing.user_id !== req.user!.id && existing.household_id !== req.user!.household_id) {
+        if (existing.user_id !== req.user!.id && existing.household_id !== req.user!.householdId) {
             throw new AppError(403, 'FORBIDDEN', 'Access denied');
         }
 
@@ -113,7 +113,7 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response, next: Nex
 router.get('/matching-recipes', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!.id;
-        const householdId = req.user!.household_id;
+        const householdId = req.user!.householdId;
 
         const results = await inventoryRepo.getMatchingRecipes(userId, householdId);
 

@@ -10,7 +10,7 @@ const router: IRouter = Router();
 router.get('/', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!.id;
-        const householdId = req.user!.household_id;
+        const householdId = req.user!.householdId;
         const results = await shoppingRepo.list(userId, householdId);
 
         res.json({
@@ -29,7 +29,7 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     try {
         const itemData = req.body;
         itemData.user_id = req.user!.id;
-        itemData.household_id = req.user!.household_id;
+        itemData.household_id = req.user!.householdId;
 
         const id = await shoppingRepo.add(itemData);
         // Simplified return for now
@@ -84,7 +84,7 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response, next: Nex
 router.post('/from-recipe/:recipeId', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user!.id;
-        const householdId = req.user!.household_id;
+        const householdId = req.user!.householdId;
         const recipeId = parseInt(req.params.recipeId as string);
 
         const count = await shoppingRepo.addFromRecipe(userId, householdId, recipeId);

@@ -204,6 +204,9 @@ export const getRecipeBySlug = (slug: string) =>
 export const getRecipeById = (id: number) =>
     request<RecipeDetail>(RECIPE_BASE, `/${id}`);
 
+export const updateRecipePrivacy = (id: number, privacy: 'public' | 'private') =>
+    request<{ message: string }>(RECIPE_BASE, `/${id}/privacy`, { method: 'PATCH', body: JSON.stringify({ privacy }) });
+
 // ─── Inventory ────────────────────────────────────────────────────────────────
 
 export interface InventoryItem {
@@ -282,3 +285,57 @@ export const getIngredients = (query?: string) => {
     const search = query ? `?query=${encodeURIComponent(query)}` : '';
     return request<FoodIngredient[]>(INGREDIENT_BASE, search);
 };
+
+// ─── Social ───────────────────────────────────────────────────────────────────
+
+const SOCIAL_BASE = '/api/social';
+
+export interface SocialFriend {
+    id: number;
+    username: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+    status: 'accepted';
+}
+
+export interface FriendRequest {
+    id: number; // friend user id
+    username: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+    connection_id: number;
+}
+
+export interface Activity {
+    id: number;
+    user_id: number;
+    action: 'posted_recipe' | 'rated_recipe' | 'cooked_meal' | 'followed_user';
+    target_id: number | null;
+    target_type: 'recipe' | 'user' | 'meal_plan' | null;
+    payload: string | null;
+    created_at: string;
+    username: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+}
+
+export const getFriends = () =>
+    request<SocialFriend[]>(SOCIAL_BASE, '/friends');
+
+export const getPendingRequests = () =>
+    request<FriendRequest[]>(SOCIAL_BASE, '/requests');
+
+export const searchUsers = (query: string) =>
+    request<ApiUser[]>(SOCIAL_BASE, `/search?query=${encodeURIComponent(query)}`);
+
+export const sendFriendRequest = (friendId: number) =>
+    request<{ id: number }>(SOCIAL_BASE, `/request/${friendId}`, { method: 'POST' });
+
+export const acceptFriendRequest = (friendId: number) =>
+    request<void>(SOCIAL_BASE, `/request/${friendId}/accept`, { method: 'PATCH' });
+
+export const getSocialFeed = () =>
+    request<Activity[]>(SOCIAL_BASE, '/feed');

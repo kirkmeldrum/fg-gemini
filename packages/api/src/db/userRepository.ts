@@ -68,6 +68,7 @@ export function toUser(row: UserRow): User {
         bio: row.bio,
         location: row.location,
         role: row.role as User['role'],
+        householdId: row.household_id,
         isDeleted: Boolean(row.is_deleted),
         createdAt: new Date(row.created_at).toISOString(),
         updatedAt: new Date(row.updated_at).toISOString(),
@@ -203,4 +204,18 @@ export async function consumeResetToken(id: number): Promise<void> {
         used_at: new Date(),
         updated_at: db.fn.now(),
     });
+}
+
+/** Search users by name or username */
+export async function search(query: string, limit = 20): Promise<User[]> {
+    const rows = await db('users')
+        .where('is_deleted', 0)
+        .andWhere(function () {
+            this.where('username', 'like', `%${query}%`)
+                .orWhere('first_name', 'like', `%${query}%`)
+                .orWhere('last_name', 'like', `%${query}%`)
+                .orWhere('display_name', 'like', `%${query}%`);
+        })
+        .limit(limit);
+    return rows.map(toUser);
 }
