@@ -1,11 +1,10 @@
-import React from 'react';
 import { Card, Badge } from './components';
 import {
     ChefHat, CalendarDays, ShoppingBag, ArrowRight, Star,
     Flame, TrendingUp, Users, Clock, AlertTriangle, ExternalLink,
-    Sparkles, Leaf, BookOpen
+    Sparkles, Leaf
 } from 'lucide-react';
-import { RECIPES, INITIAL_PANTRY, INITIAL_SHOPPING_LIST, INITIAL_MEAL_PLAN, Recipe, PantryItem, USERS, api } from './data';
+import { RECIPES, INITIAL_PANTRY, INITIAL_SHOPPING_LIST, INITIAL_MEAL_PLAN, Recipe, USERS } from './data';
 
 const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any) => void }) => {
 
@@ -60,10 +59,10 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                     </p>
                     <div className="flex flex-wrap gap-3">
                         <button
-                            onClick={() => onChangeView('recipes')}
+                            onClick={() => onChangeView('smart-search')}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-emerald-900/20"
                         >
-                            <ChefHat size={20} /> Browse Recipes
+                            <ChefHat size={20} /> Smart Search
                         </button>
                         <button
                             onClick={() => onChangeView('kitchen')}

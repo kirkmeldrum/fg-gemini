@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Layout } from './components/ui';
 import MyKitchen from './pages/MyKitchenPage';
@@ -14,6 +14,7 @@ import Auth from './pages/AuthPage';
 import SmartScanner from './pages/SmartScannerPage';
 import RecipeIndexer from './pages/RecipeIndexerPage';
 import DashboardPage from './pages/DashboardPage';
+import SmartSearch from './pages/SmartSearchPage';
 
 // ─── Inner app (has access to AuthContext) ───────────────────────────────────
 function AppInner() {
@@ -24,7 +25,34 @@ function AppInner() {
     const navigate = (view: string, params?: any) => {
         setCurrentView(view);
         setRouteParams(params || {});
+        // Update URL for better DX/UX
+        const path = view === 'dashboard' ? '/' : `/${view}`;
+        window.history.pushState({ view, params }, '', path);
     };
+
+    // Handle back/forward buttons
+    useEffect(() => {
+        const handlePopState = (e: PopStateEvent) => {
+            if (e.state) {
+                setCurrentView(e.state.view);
+                setRouteParams(e.state.params || {});
+            } else {
+                // Default to dashboard for root or unknown
+                setCurrentView('dashboard');
+                setRouteParams({});
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    // Initial sync with URL (experimental)
+    useEffect(() => {
+        const path = window.location.pathname.slice(1);
+        if (path && path !== 'dashboard') {
+            setCurrentView(path);
+        }
+    }, []);
 
     // Splash while checking session cookie
     if (isLoading) {
@@ -57,6 +85,7 @@ function AppInner() {
             case 'social': return <SocialNetwork />;
             case 'encyclopedia': return <FoodEncyclopedia initialFoodId={routeParams.id} onNavigate={navigate} />;
             case 'profile': return <Profile />;
+            case 'smart-search': return <SmartSearch onNavigate={navigate} />;
             case 'smart-scan': return <SmartScanner onNavigate={navigate} />;
             case 'recipe-indexer': return <RecipeIndexer onScanComplete={(data: any) => navigate('add-recipe', { initialData: data })} onCancel={() => navigate('recipes')} />;
             default: return <DashboardPage onChangeView={navigate} />;

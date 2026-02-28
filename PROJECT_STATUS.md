@@ -1,8 +1,8 @@
 # FoodGenie — Project Status
 
 **Last Updated:** 2026-02-27
-**Phase:** Phase 4 — Build (Sprint 1.5 Ready)
-**Sprint Focus:** Sprint 1.5 — Social & Community
+**Phase:** Phase 4 — Build (Sprint 1.6 Ready)
+**Sprint Focus:** Sprint 1.6 — Smart Search
 
 ---
 
@@ -20,17 +20,18 @@
 
 ---
 
-## Current Sprint: Sprint 1.5 — Social & Community
+## Current Sprint: Sprint 1.6 — Smart Search
 
-**Goal:** Implement user social features, following, and personal recipe sharing.
+**Goal:** Implement inventory-aware recipe matching with taxonomy and substitutions.
 
 ### Tasks
 | # | Task | REQ | Status | Notes |
 |---|------|-----|--------|-------|
-| 18 | User following system (follower/following) | REQ-008.1 | 🏗️ | Scheduled |
-| 19 | Public/Private recipe toggle & visibility | REQ-008.2 | 🏗️ | Scheduled |
-| 20 | Feed/Wall of friend-shared recipes | REQ-008.3 | 🏗️ | Scheduled |
-| 21 | Social UI (Friends list, activity feed) | REQ-008.4 | 🏗️ | Scheduled |
+| 22 | Coverage-based recipe search API | REQ-006.1 | 🏗️ | Scheduled |
+| 23 | Taxonomy-aware matching (parent/child) | REQ-006.3 | 🏗️ | Scheduled |
+| 24 | Substitution-aware matching logic | REQ-006.4 | 🏗️ | Scheduled |
+| 25 | Smart Search UI (What can I cook?) | REQ-006.6 | 🏗️ | Scheduled |
+| 26 | Assume pantry staples logic | REQ-006.7 | 🏗️ | Scheduled |
 
 ---
 
@@ -48,6 +49,14 @@
 ### Sprint 1.4 — Inventory & Pantry (✅ Complete)
 - REQ-006 implemented: Pantry management, storage locations, and automated matching.
 - REQ-007 implemented: Smart shopping list generation from recipe ingredients.
+
+### Sprint 1.5 — Social & Community (✅ Complete)
+- Friend requests, activity feeds, and recipe privacy.
+
+### Sprint 1.6 — Smart Search (✅ Complete)
+- REQ-006.1, 006.6, 006.7 implemented: Coverage-based recipe search, Smart Search UI, and pantry staples logic.
+- Fixed white-screen crash in Smart Search and unresponsive Social Network search.
+- Added URL synchronization for better navigation.
 
 ---
 
@@ -68,4 +77,4 @@ v1.0 DDL finalized for both SQL Server (dev) and PostgreSQL (prod).
 ---
 
 ## Session Resumption
-**Next task**: Begin Sprint 1.5 — Social & Community (Followers, Sharing, Feed).
+**Next task**: Begin Sprint 1.6 — Smart Search (Matching, Taxonomy, Substitutions).

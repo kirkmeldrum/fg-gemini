@@ -21,6 +21,7 @@ export interface ApiUser {
     role: 'user' | 'admin';
     createdAt: string;
     updatedAt: string;
+    connectionStatus?: 'pending' | 'accepted' | 'blocked' | null;
 }
 
 export interface ApiError {
@@ -339,3 +340,44 @@ export const acceptFriendRequest = (friendId: number) =>
 
 export const getSocialFeed = () =>
     request<Activity[]>(SOCIAL_BASE, '/feed');
+
+// ─── Smart Search ─────────────────────────────────────────────────────────────
+
+const SEARCH_BASE = '/api/search';
+
+export interface SmartRecipeMatch extends Recipe {
+    total_ingredients: number;
+    owned_ingredients: number;
+    coverage_percentage: number;
+    missing_ingredients: string[];
+}
+
+export interface SearchStats {
+    total: number;
+    fully_matched: number;
+    almost_there: number;
+    needs_shopping: number;
+}
+
+export interface SmartSearchFilters {
+    q?: string;
+    cuisine?: string;
+    difficulty?: string;
+    max_missing?: number;
+    pantry?: boolean;
+}
+
+export const smartSearch = (filters: SmartSearchFilters = {}) => {
+    const search = new URLSearchParams();
+    if (filters.q) search.set('q', filters.q);
+    if (filters.cuisine) search.set('cuisine', filters.cuisine);
+    if (filters.difficulty) search.set('difficulty', filters.difficulty);
+    if (filters.max_missing !== undefined) search.set('max_missing', filters.max_missing.toString());
+    if (filters.pantry !== undefined) search.set('pantry', filters.pantry.toString());
+
+    const queryStr = search.toString();
+    return request<SmartRecipeMatch[]>(SEARCH_BASE, queryStr ? `/smart?${queryStr}` : '/smart');
+};
+
+export const getSearchStats = () =>
+    request<SearchStats>(SEARCH_BASE, '/stats');

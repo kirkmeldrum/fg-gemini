@@ -27,13 +27,46 @@ export interface ActivityItem {
 export const socialRepository = {
     /** Send a friend request or follow a user */
     async sendRequest(userId: number, friendId: number) {
+        // Check if existing connection already exists (either direction)
+        const existing = await db('friend_connections')
+            .where(builder => {
+                builder.where({ user_id: userId, friend_id: friendId })
+                    .orWhere({ user_id: friendId, friend_id: userId })
+            })
+            .first();
+
+        if (existing) {
+            return existing.id;
+        }
+
         const rows = await db('friend_connections').insert({
             user_id: userId,
             friend_id: friendId,
             status: 'pending',
             updated_at: db.fn.now()
         }).returning('id');
-        return rows[0].id ?? rows[0];
+        const insertedId = rows[0]?.id ?? rows[0];
+        return insertedId;
+    },
+
+    /** Get connection statuses for a list of users relative to current user */
+    async getConnectionStatuses(userId: number, otherUserIds: number[]) {
+        if (otherUserIds.length === 0) return {};
+        const connections = await db('friend_connections')
+            .where(function () {
+                this.where('user_id', userId).whereIn('friend_id', otherUserIds)
+            })
+            .orWhere(function () {
+                this.where('friend_id', userId).whereIn('user_id', otherUserIds)
+            })
+            .select('user_id', 'friend_id', 'status');
+
+        const map: Record<number, string> = {};
+        connections.forEach(c => {
+            const otherId = c.user_id === userId ? c.friend_id : c.user_id;
+            map[otherId] = c.status;
+        });
+        return map;
     },
 
     /** Accept or block a request */

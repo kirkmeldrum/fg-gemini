@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "name": "Salt",
+    "slug": "salt"
+  },
+  {
+    "id": 2,
+    "name": "Black Pepper",
+    "slug": "black-pepper"
+  },
+  {
+    "id": 3,
+    "name": "Olive Oil",
+    "slug": "olive-oil"
+  },
+  {
+    "id": 4,
+    "name": "Unsalted Butter",
+    "slug": "unsalted-butter"
+  },
+  {
+    "id": 5,
+    "name": "Large Egg",
+    "slug": "large-egg"
+  },
+  {
+    "id": 6,
+    "name": "All-Purpose Flour",
+    "slug": "all-purpose-flour"
+  },
+  {
+    "id": 7,
+    "name": "Granulated Sugar",
+    "slug": "granulated-sugar"
+  },
+  {
+    "id": 8,
+    "name": "Garlic",
+    "slug": "garlic"
+  },
+  {
+    "id": 9,
+    "name": "Yellow Onion",
+    "slug": "yellow-onion"
+  },
+  {
+    "id": 10,
+    "name": "Roma Tomato",
+    "slug": "roma-tomato"
+  },
+  {
+    "id": 11,
+    "name": "Fresh Basil",
+    "slug": "fresh-basil"
+  },
+  {
+    "id": 12,
+    "name": "Lemon",
+    "slug": "lemon"
+  },
+  {
+    "id": 13,
+    "name": "Boneless Skinless Chicken Breast",
+    "slug": "chicken-breast"
+  },
+  {
+    "id": 14,
+    "name": "Bacon Slap",
+    "slug": "bacon"
+  },
+  {
+    "id": 15,
+    "name": "Sharp Cheddar Cheese",
+    "slug": "sharp-cheddar"
+  },
+  {
+    "id": 16,
+    "name": "Parmesan Cheese",
+    "slug": "parmesan"
+  }
+]

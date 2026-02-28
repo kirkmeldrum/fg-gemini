@@ -12,9 +12,19 @@ const router: IRouter = Router();
 router.get('/search', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const query = req.query.query as string;
+        const userId = (req.user as any).id;
         if (!query) return res.json({ success: true, data: [] });
+
         const results = await userRepo.search(query);
-        res.json({ success: true, data: results });
+        const userIds = results.map(u => u.id);
+        const connectionStatuses = await socialRepository.getConnectionStatuses(userId, userIds);
+
+        const enriched = results.map(u => ({
+            ...u,
+            connectionStatus: connectionStatuses[u.id] || null
+        }));
+
+        res.json({ success: true, data: enriched });
     } catch (err) {
         next(err);
     }

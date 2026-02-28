@@ -1,0 +1,169 @@
+[
+  {
+    "id": 1,
+    "name": "Produce",
+    "parent_id": null
+  },
+  {
+    "id": 2,
+    "name": "Dairy & Eggs",
+    "parent_id": null
+  },
+  {
+    "id": 3,
+    "name": "Meat & Poultry",
+    "parent_id": null
+  },
+  {
+    "id": 4,
+    "name": "Pantry Staples",
+    "parent_id": null
+  },
+  {
+    "id": 5,
+    "name": "Bakery",
+    "parent_id": null
+  },
+  {
+    "id": 6,
+    "name": "Frozen Foods",
+    "parent_id": null
+  },
+  {
+    "id": 7,
+    "name": "Spices & Seasonings",
+    "parent_id": null
+  },
+  {
+    "id": 8,
+    "name": "Vegetables",
+    "parent_id": 1
+  },
+  {
+    "id": 9,
+    "name": "Fruits",
+    "parent_id": 1
+  },
+  {
+    "id": 10,
+    "name": "Cheese",
+    "parent_id": 2
+  },
+  {
+    "id": 11,
+    "name": "Milk & Cream",
+    "parent_id": 2
+  },
+  {
+    "id": 12,
+    "name": "Beef",
+    "parent_id": 3
+  },
+  {
+    "id": 13,
+    "name": "Chicken",
+    "parent_id": 3
+  },
+  {
+    "id": 14,
+    "name": "Pork",
+    "parent_id": 3
+  },
+  {
+    "id": 15,
+    "name": "Grains & Pasta",
+    "parent_id": 4
+  },
+  {
+    "id": 16,
+    "name": "Oils & Vinegars",
+    "parent_id": 4
+  },
+  {
+    "id": 17,
+    "name": "Baking Essentials",
+    "parent_id": 4
+  }
+]
+[
+  {
+    "id": 1,
+    "name": "Salt",
+    "category_id": 4
+  },
+  {
+    "id": 2,
+    "name": "Black Pepper",
+    "category_id": 4
+  },
+  {
+    "id": 3,
+    "name": "Olive Oil",
+    "category_id": 4
+  },
+  {
+    "id": 4,
+    "name": "Unsalted Butter",
+    "category_id": 2
+  },
+  {
+    "id": 5,
+    "name": "Large Egg",
+    "category_id": 2
+  },
+  {
+    "id": 6,
+    "name": "All-Purpose Flour",
+    "category_id": 17
+  },
+  {
+    "id": 7,
+    "name": "Granulated Sugar",
+    "category_id": 17
+  },
+  {
+    "id": 8,
+    "name": "Garlic",
+    "category_id": 8
+  },
+  {
+    "id": 9,
+    "name": "Yellow Onion",
+    "category_id": 8
+  },
+  {
+    "id": 10,
+    "name": "Roma Tomato",
+    "category_id": 8
+  },
+  {
+    "id": 11,
+    "name": "Fresh Basil",
+    "category_id": 1
+  },
+  {
+    "id": 12,
+    "name": "Lemon",
+    "category_id": 9
+  },
+  {
+    "id": 13,
+    "name": "Boneless Skinless Chicken Breast",
+    "category_id": 13
+  },
+  {
+    "id": 14,
+    "name": "Bacon Slap",
+    "category_id": 3
+  },
+  {
+    "id": 15,
+    "name": "Sharp Cheddar Cheese",
+    "category_id": 10
+  },
+  {
+    "id": 16,
+    "name": "Parmesan Cheese",
+    "category_id": 10
+  }
+]

@@ -31,7 +31,8 @@ import socialRoutes from './social.js';
 apiRoutes.use('/social', socialRoutes);
 
 // Sprint 1.6: Smart Search routes
-// apiRoutes.use('/search', searchRoutes);
+import searchRoutes from './search.js';
+apiRoutes.use('/search', searchRoutes);
 
 // Placeholder root route
 apiRoutes.get('/', (_req, res) => {

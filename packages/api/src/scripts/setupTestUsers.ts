@@ -17,7 +17,8 @@ async function setupTestUsers() {
                 await db('users').insert(user);
                 console.log(`Created user: ${user.username}`);
             } else {
-                console.log(`User already exists: ${user.username}`);
+                await db('users').where({ id: exists.id }).update({ password_hash: user.password_hash });
+                console.log(`Updated password for user: ${user.username}`);
             }
         }
         process.exit(0);

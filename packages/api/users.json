@@ -1,0 +1,3 @@
+USERS_START
+[{"id":1,"username":"smoketest2","email":"smoke2@example.com","role":"user"},{"id":2,"username":"kirkmeldrum","email":"kirkmeldrum1@gmail.com","role":"user"},{"id":3,"username":"kirkm","email":"kirk.meldrum@kirk.com","role":"user"},{"id":4,"username":"chef_tony","email":"tony@foodgenie.test","role":"user"},{"id":5,"username":"baker_jane","email":"jane@foodgenie.test","role":"user"},{"id":6,"username":"admin","email":"admin@foodgenie.com","role":"admin"},{"id":7,"username":"chef_julia","email":"chef@example.com","role":"user"}]
+USERS_END

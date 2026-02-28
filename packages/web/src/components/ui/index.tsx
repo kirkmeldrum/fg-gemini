@@ -1,7 +1,7 @@
 
 
 import React from 'react';
-import { LucideIcon, Menu, Home, Utensils, Calendar, ShoppingCart, Users, Search, X, Check, BookOpen, Scan, LogOut } from 'lucide-react';
+import { LucideIcon, Menu, Home, Utensils, Calendar, ShoppingCart, Users, Search, X, Check, BookOpen, Scan, LogOut, ChefHat } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 // --- UI Primitives ---
@@ -158,6 +158,7 @@ export const Layout = ({ children, currentView, onViewChange, onLogout }: any) =
         <nav className="flex-1 p-4 space-y-1">
           <SidebarItem icon={Home} label="Dashboard" active={currentView === 'dashboard'} onClick={() => onViewChange('dashboard')} />
           <SidebarItem icon={Utensils} label="My Kitchen" active={currentView === 'kitchen'} onClick={() => onViewChange('kitchen')} />
+          <SidebarItem icon={ChefHat} label="Smart Search" active={currentView === 'smart-search'} onClick={() => onViewChange('smart-search')} />
           <SidebarItem icon={Search} label="Browse Recipes" active={currentView === 'recipes' || currentView === 'add-recipe' || currentView === 'recipe-detail' || currentView === 'recipe-indexer'} onClick={() => onViewChange('recipes')} />
           <SidebarItem icon={Calendar} label="Meal Planner" active={currentView === 'planner'} onClick={() => onViewChange('planner')} />
           <SidebarItem icon={ShoppingCart} label="Shopping List" active={currentView === 'shopping'} onClick={() => onViewChange('shopping')} />

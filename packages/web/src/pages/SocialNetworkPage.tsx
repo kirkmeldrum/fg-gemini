@@ -27,6 +27,18 @@ export default function SocialNetwork() {
         loadSocialData();
     }, []);
 
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchQuery.trim()) {
+                handleSearch();
+            } else {
+                setSearchResults([]);
+            }
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     const loadSocialData = async () => {
         setIsLoading(true);
         try {
@@ -407,12 +419,14 @@ export default function SocialNetwork() {
                                                     <p className="text-xs text-slate-400">@{u.username}</p>
                                                 </div>
                                             </div>
-                                            {sentRequests.includes(u.id) ? (
-                                                <Badge className="bg-slate-100 text-slate-500 border-0">Sent</Badge>
+                                            {u.connectionStatus === 'pending' || sentRequests.includes(u.id) ? (
+                                                <Badge className="bg-amber-100 text-amber-700 border-0 font-bold px-3">Pending</Badge>
+                                            ) : u.connectionStatus === 'accepted' ? (
+                                                <Badge className="bg-emerald-100 text-emerald-700 border-0 font-bold px-3">Chef</Badge>
                                             ) : (
                                                 <Button
                                                     variant="secondary"
-                                                    className="px-4 py-1.5 text-xs rounded-full"
+                                                    className="px-4 py-1.5 text-xs rounded-full font-bold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 transition-all border-0"
                                                     onClick={() => handleSendRequest(u.id)}
                                                 >
                                                     Connect
