@@ -29,7 +29,7 @@ export interface RecipeMatchResult {
  * Smart Search Engine (REQ-006)
  */
 export async function smartSearch(userId: number, householdId: number | null, filters: SearchFilters = {}) {
-    // 1. Get user's inventory + their categories + substitutions
+    // 1. Get user's inventory
     const inventoryQuery = db('user_inventory')
         .select('ingredient_id')
         .where('is_deleted', false);
@@ -41,7 +41,7 @@ export async function smartSearch(userId: number, householdId: number | null, fi
     }
 
     const inventory = await inventoryQuery;
-    const inventoryIngIds = inventory.map(i => i.ingredient_id);
+    const inventoryIngIds = inventory.map(i => i.ingredient_id).filter(id => id !== null) as number[];
     const ownedIds = new Set(inventoryIngIds);
 
     // 2. Identify pantry staples
@@ -52,24 +52,31 @@ export async function smartSearch(userId: number, householdId: number | null, fi
             .where('is_pantry_staple', true);
         stapleIds = staples.map(s => s.id);
     }
+    const stapleSet = new Set(stapleIds);
 
     // 3. Taxonomy Awareness (REQ-006.3)
-    // Find all ingredients in the same category or child categories of what we have
-    // This is a simplification: if you have a specific ingredient, you satisfy that category's "generic" requirements
-    const ownedCategories = await db('ingredients')
-        .select('category_id')
-        .whereIn('id', inventoryIngIds)
-        .whereNotNull('category_id');
+    // Fetch all ingredients to map to categories
+    const allIngredients = await db('ingredients').select('id', 'category_id');
+    const ingredientCategoryMap = new Map<number, number>();
+    allIngredients.forEach(i => {
+        if (i.category_id) ingredientCategoryMap.set(i.id, i.category_id);
+    });
 
-    const catIds = ownedCategories.map(c => c.category_id);
+    // Build the "Owned Categories" set, including parents of owned categories
+    const allCats = await db('food_categories').select('id', 'parent_id');
+    const catParentMap = new Map<number, number>();
+    allCats.forEach(c => {
+        if (c.parent_id !== null) catParentMap.set(c.id, c.parent_id);
+    });
 
-    // Find all ingredients that belong to the same category hierarchies
-    // For now, let's just get everything in the same immediate category
-    const sameCategoryIngredients = await db('ingredients')
-        .select('id')
-        .whereIn('category_id', catIds);
-
-    const taxonomyOwnedIds = new Set(sameCategoryIngredients.map(i => i.id));
+    const ownedCategoryHierarchy = new Set<number>();
+    inventoryIngIds.forEach(id => {
+        let current: number | undefined = ingredientCategoryMap.get(id);
+        while (current !== undefined) {
+            ownedCategoryHierarchy.add(current);
+            current = catParentMap.get(current);
+        }
+    });
 
     // 4. Substitution Awareness (REQ-006.4)
     const substitutions = await db('ingredient_substitutions')
@@ -78,10 +85,13 @@ export async function smartSearch(userId: number, householdId: number | null, fi
 
     const substitutionMap = new Map<number, string>();
     substitutions.forEach(s => {
-        substitutionMap.set(s.ingredient_id, s.match_type);
+        const current = substitutionMap.get(s.ingredient_id);
+        if (!current || (s.match_type === 'exact' && current !== 'exact')) {
+            substitutionMap.set(s.ingredient_id, s.match_type);
+        }
     });
 
-    // 5. Get all recipes with their ingredients
+    // 5. Get all recipes
     const baseQuery = db('recipes')
         .where('recipes.is_deleted', false)
         .where('recipes.privacy', 'public');
@@ -97,10 +107,6 @@ export async function smartSearch(userId: number, householdId: number | null, fi
     }
 
     const recipes = await baseQuery;
-
-    // 4. Calculate coverage for each recipe
-    // For large datasets, this would be a single complex SQL query.
-    // For MVP/Dev, we can optimize by fetching recipe_ingredients in bulk.
     const recipeIds = recipes.map(r => r.id);
     if (recipeIds.length === 0) return [];
 
@@ -110,45 +116,47 @@ export async function smartSearch(userId: number, householdId: number | null, fi
 
     const matches: RecipeMatchResult[] = recipes.map(recipe => {
         const recipeIngs = allRecipeIngredients.filter(ri => ri.recipe_id === recipe.id);
-        const total = recipeIngs.length;
+        const mandatoryIngs = recipeIngs.filter(ri => !ri.is_optional);
+        const total = mandatoryIngs.length || 1;
 
         const missingList: string[] = [];
         let ownedScore = 0;
-        let ownedCount = 0;
+        let ownedCountByMatch = 0;
 
         recipeIngs.forEach(ri => {
-            const exactMatch = ri.ingredient_id && (ownedIds.has(ri.ingredient_id) || stapleIds.includes(ri.ingredient_id));
-            const taxonomyMatch = ri.ingredient_id && taxonomyOwnedIds.has(ri.ingredient_id);
+            if (ri.is_optional) return;
+
+            const exactMatch = ri.ingredient_id && (ownedIds.has(ri.ingredient_id) || stapleSet.has(ri.ingredient_id));
+            const riCatId = ri.ingredient_id ? ingredientCategoryMap.get(ri.ingredient_id) : null;
+            const taxonomyMatch = riCatId && ownedCategoryHierarchy.has(riCatId);
             const substitutionType = ri.ingredient_id ? substitutionMap.get(ri.ingredient_id) : null;
 
-            if (exactMatch || ri.is_optional) {
-                ownedScore += 1;
-                ownedCount += 1;
+            if (exactMatch) {
+                ownedScore += 1.0;
+                ownedCountByMatch += 1;
             } else if (taxonomyMatch) {
-                ownedScore += 0.9; // Taxonomy match is slightly less than exact
-                ownedCount += 1;
+                ownedScore += 1.0; // REQ-006.3: Specific matches generic
+                ownedCountByMatch += 1;
             } else if (substitutionType) {
-                // REQ-006.4: full matches count as 1.0, substitutions as 0.75
                 const score = substitutionType === 'exact' ? 1.0 : (substitutionType === 'close' ? 0.75 : 0.5);
                 ownedScore += score;
-                ownedCount += 1;
+                if (score >= 0.75) ownedCountByMatch += 1;
             } else {
                 missingList.push(ri.name_display);
             }
         });
 
-        const coverage = total > 0 ? (ownedScore / total) * 100 : 100;
+        const coverage = (ownedScore / total) * 100;
 
         return {
             ...recipe,
-            total_ingredients: total,
-            owned_ingredients: ownedCount,
-            coverage_percentage: Math.round(coverage),
+            total_ingredients: total, // Use mandatory count for stat
+            owned_ingredients: ownedCountByMatch,
+            coverage_percentage: Math.min(100, Math.round(coverage)),
             missing_ingredients: missingList
         };
     });
 
-    // 5. Filter by max_missing and sort by coverage
     const maxMissing = filters.max_missing ?? 5;
 
     return matches

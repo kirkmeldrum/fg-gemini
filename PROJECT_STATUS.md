@@ -1,8 +1,8 @@
 # FoodGenie — Project Status
 
 **Last Updated:** 2026-02-27
-**Phase:** Phase 4 — Build (Sprint 1.6 Ready)
-**Sprint Focus:** Sprint 1.6 — Smart Search
+**Phase:** Phase 4 — Build (Sprint 1.7 Ready)
+**Sprint Focus:** Sprint 1.7 — AI Recipe Clipper
 
 ---
 
@@ -27,11 +27,11 @@
 ### Tasks
 | # | Task | REQ | Status | Notes |
 |---|------|-----|--------|-------|
-| 22 | Coverage-based recipe search API | REQ-006.1 | 🏗️ | Scheduled |
-| 23 | Taxonomy-aware matching (parent/child) | REQ-006.3 | 🏗️ | Scheduled |
-| 24 | Substitution-aware matching logic | REQ-006.4 | 🏗️ | Scheduled |
-| 25 | Smart Search UI (What can I cook?) | REQ-006.6 | 🏗️ | Scheduled |
-| 26 | Assume pantry staples logic | REQ-006.7 | 🏗️ | Scheduled |
+| 22 | Coverage-based recipe search API | REQ-006.1 | ✅ | Complete |
+| 23 | Taxonomy-aware matching (parent/child) | REQ-006.3 | ✅ | Complete |
+| 24 | Substitution-aware matching logic | REQ-006.4 | ✅ | Complete |
+| 25 | Smart Search UI (What can I cook?) | REQ-006.6 | ✅ | Complete |
+| 26 | Assume pantry staples logic | REQ-006.7 | ✅ | Complete |
 
 ---
 
@@ -55,6 +55,7 @@
 
 ### Sprint 1.6 — Smart Search (✅ Complete)
 - REQ-006.1, 006.6, 006.7 implemented: Coverage-based recipe search, Smart Search UI, and pantry staples logic.
+- REQ-006.3, 006.4 implemented: Taxonomy-aware matching (ancestors) and substitution weighting (0.75/0.5).
 - Fixed white-screen crash in Smart Search and unresponsive Social Network search.
 - Added URL synchronization for better navigation.
 
@@ -77,4 +78,4 @@ v1.0 DDL finalized for both SQL Server (dev) and PostgreSQL (prod).
 ---
 
 ## Session Resumption
-**Next task**: Begin Sprint 1.6 — Smart Search (Matching, Taxonomy, Substitutions).
+**Next task**: Begin Sprint 1.7 — AI Recipe Clipper (REQ-007).
