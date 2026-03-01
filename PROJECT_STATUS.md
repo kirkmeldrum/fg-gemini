@@ -87,4 +87,4 @@ v1.0 DDL finalized for both SQL Server (dev) and PostgreSQL (prod).
 ---
 
 ## Session Resumption
-**Next task**: Begin Sprint 1.7 — AI Recipe Clipper (REQ-007).
+**Next task**: Begin Sprint 1.8 — Meal Planner (REQ-008).
