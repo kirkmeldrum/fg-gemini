@@ -18,7 +18,7 @@ export async function find(params: {
 }) {
     const { query, cuisine, limit = 20, offset = 0, userId, visibility = 'public' } = params;
 
-    const q = db('recipes').where('deleted_at', null);
+    const q = db('recipes').where('is_deleted', false);
 
     if (visibility === 'public') {
         q.where('privacy', 'public');
@@ -59,7 +59,7 @@ export async function find(params: {
  */
 export async function findBySlug(slug: string) {
     const recipe = await db('recipes')
-        .where({ slug, deleted_at: null })
+        .where({ slug, is_deleted: false })
         .first();
 
     if (!recipe) return null;
@@ -84,7 +84,7 @@ export async function findBySlug(slug: string) {
  */
 export async function findById(id: number) {
     const recipe = await db('recipes')
-        .where({ id, deleted_at: null })
+        .where({ id, is_deleted: false })
         .first();
 
     if (!recipe) return null;
@@ -143,5 +143,5 @@ export async function updatePrivacy(id: number, privacy: 'public' | 'private' | 
 export async function softDelete(id: number) {
     return db('recipes')
         .where({ id })
-        .update({ deleted_at: db.fn.now(), updated_at: db.fn.now() });
+        .update({ is_deleted: true, updated_at: db.fn.now() });
 }

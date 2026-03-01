@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, Users, Search, SlidersHorizontal, Plus } from 'lucide-react';
+import { Clock, Users, Search, SlidersHorizontal, Plus, Zap } from 'lucide-react';
 import { Card, Button, Badge, Checkbox, RangeInput, Input } from './components';
 import { getRecipes, Recipe } from '../lib/api';
 
@@ -131,9 +131,14 @@ export default function Recipes({ onNavigate }: RecipesProps) {
                             <SlidersHorizontal size={18} />
                         </Button>
                         {onNavigate && (
-                            <Button onClick={() => onNavigate('add-recipe')} className="whitespace-nowrap">
-                                <Plus size={18} /> <span className="hidden md:inline">Create</span>
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={() => onNavigate('clipper')} className="whitespace-nowrap">
+                                    <Zap size={18} className="text-amber-500 fill-amber-500" /> <span className="hidden md:inline">Import</span>
+                                </Button>
+                                <Button onClick={() => onNavigate('add-recipe')} className="whitespace-nowrap">
+                                    <Plus size={18} /> <span className="hidden md:inline">Create</span>
+                                </Button>
+                            </div>
                         )}
                     </div>
                 </div>

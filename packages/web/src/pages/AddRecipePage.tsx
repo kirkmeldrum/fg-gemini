@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Plus, Trash2, Camera, Upload } from 'lucide-react';
+import { ChevronLeft, Plus, Trash2, Camera, Zap } from 'lucide-react';
 import { Card, Button, Input, TextArea, Label } from './components';
 import { api, FoodNode, USERS, Recipe } from './data';
 
@@ -12,8 +12,8 @@ interface AddRecipeProps {
 
 export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
   const [ingredients, setIngredients] = useState<FoodNode[]>([]);
-  const [recipeImage, setRecipeImage] = useState<string | null>(initialData?.image || null);
-  
+  const [recipeImage] = useState<string | null>(initialData?.image || null);
+
   // Form State
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(initialData?.description || "");
@@ -23,23 +23,24 @@ export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
   const [calories, setCalories] = useState(initialData?.calories?.toString() || "");
   const [cuisine, setCuisine] = useState(initialData?.cuisine || "");
   const [tags, setTags] = useState(initialData?.tags?.join(", ") || "");
-  
-  const [recipeIngredients, setRecipeIngredients] = useState(
+
+  const [recipeIngredients, setRecipeIngredients] = useState<any[]>(
     initialData?.ingredients?.map(i => ({
-        ingredientId: i.food_node_id.toString(),
-        quantity: i.quantity.toString(),
-        unit: i.unit
-    })) || [{ ingredientId: "", quantity: "", unit: "" }]
+      ingredientId: (i as any).food_node_id?.toString() || "",
+      name_display: (i as any).name_display || "",
+      quantity: i.quantity?.toString() || "",
+      unit: i.unit || ""
+    })) || [{ ingredientId: "", name_display: "", quantity: "", unit: "" }]
   );
 
-  const [instructions, setInstructions] = useState([""]);
+  const [instructions, setInstructions] = useState((initialData as any)?.instructions || [""]);
 
   useEffect(() => {
     api.getFoodNodes().then(setIngredients);
   }, []);
 
   const handleAddIngredientRow = () => {
-    setRecipeIngredients([...recipeIngredients, { ingredientId: "", quantity: "", unit: "" }]);
+    setRecipeIngredients([...recipeIngredients, { ingredientId: "", name_display: "", quantity: "", unit: "" }]);
   };
 
   const handleRemoveIngredientRow = (index: number) => {
@@ -63,14 +64,15 @@ export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
   };
 
   const handleRemoveInstruction = (index: number) => {
-    setInstructions(instructions.filter((_, i) => i !== index));
+    setInstructions(instructions.filter((_val: string, i: number) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newRecipe = {
+
+    const newRecipe: Omit<Recipe, 'id'> = {
       title,
+      slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
       description,
       image: recipeImage || "https://images.unsplash.com/photo-1495521821758-ee18ece6d638?auto=format&fit=crop&w=800&q=80",
       prep_time: parseInt(prepTime) || 0,
@@ -98,14 +100,14 @@ export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
           <ChevronLeft size={24} />
         </Button>
         <h1 className="text-2xl font-bold text-slate-800">
-            {initialData ? "Review & Publish Recipe" : "Add New Recipe"}
+          {initialData ? "Review & Publish Recipe" : "Add New Recipe"}
         </h1>
       </div>
-      
+
       {initialData && (
         <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center gap-3 text-emerald-800 text-sm">
-            <Camera size={20} />
-            Data extracted from image. Please review accuracy before publishing.
+          {(initialData as any).logId ? <Zap size={20} className="text-amber-500 fill-amber-500" /> : <Camera size={20} />}
+          {(initialData as any).logId ? "Data extracted via AI Clipper. Please review accuracy before publishing." : "Data extracted from image. Please review accuracy before publishing."}
         </div>
       )}
 
@@ -113,7 +115,7 @@ export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
         {/* Basic Info Card */}
         <Card className="p-6 space-y-6">
           <h2 className="text-lg font-semibold text-slate-800 border-b border-slate-100 pb-3">Basic Information</h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-4">
               <div>
@@ -125,17 +127,17 @@ export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
                 <TextArea id="description" rows={3} placeholder="Tell us a bit about this dish..." value={description} onChange={e => setDescription(e.target.value)} />
               </div>
             </div>
-            
+
             <div className="md:col-span-1">
               <Label>Recipe Photo</Label>
               <div className="mt-1 border-2 border-dashed border-slate-300 rounded-xl h-40 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-slate-400 hover:text-emerald-600">
                 {recipeImage ? (
-                    <img src={recipeImage} className="w-full h-full object-cover rounded-lg" />
+                  <img src={recipeImage} className="w-full h-full object-cover rounded-lg" />
                 ) : (
-                    <>
-                        <Camera size={32} className="mb-2" />
-                        <span className="text-xs font-medium">Upload Photo</span>
-                    </>
+                  <>
+                    <Camera size={32} className="mb-2" />
+                    <span className="text-xs font-medium">Upload Photo</span>
+                  </>
                 )}
               </div>
             </div>
@@ -182,22 +184,27 @@ export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
           <div className="space-y-3">
             {recipeIngredients.map((row, idx) => (
               <div key={idx} className="flex gap-3 items-start">
-                <div className="flex-1">
-                  <select 
+                <div className="flex-1 space-y-1">
+                  <select
                     className="w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     value={row.ingredientId}
                     onChange={(e) => updateIngredientRow(idx, 'ingredientId', e.target.value)}
-                    required
+                    required={!row.name_display}
                   >
-                    <option value="">Select Ingredient</option>
+                    <option value="">Map to Database Ingredient...</option>
                     {ingredients.map(ing => (
                       <option key={ing.id} value={ing.id}>{ing.name}</option>
                     ))}
                   </select>
+                  {row.name_display && (
+                    <div className="text-[10px] text-slate-400 px-1 italic">
+                      Original: {row.name_display}
+                    </div>
+                  )}
                 </div>
                 <div className="w-24">
-                  <Input 
-                    placeholder="Qty" 
+                  <Input
+                    placeholder="Qty"
                     type="number"
                     value={row.quantity}
                     onChange={(e) => updateIngredientRow(idx, 'quantity', e.target.value)}
@@ -205,8 +212,8 @@ export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
                   />
                 </div>
                 <div className="w-24">
-                  <Input 
-                    placeholder="Unit" 
+                  <Input
+                    placeholder="Unit"
                     value={row.unit}
                     onChange={(e) => updateIngredientRow(idx, 'unit', e.target.value)}
                     required
@@ -234,13 +241,13 @@ export default function AddRecipe({ onBack, initialData }: AddRecipeProps) {
           </div>
 
           <div className="space-y-4">
-            {instructions.map((step, idx) => (
+            {instructions.map((step: string, idx: number) => (
               <div key={idx} className="flex gap-4">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
                   {idx + 1}
                 </div>
-                <TextArea 
-                  rows={2} 
+                <TextArea
+                  rows={2}
                   placeholder={`Step ${idx + 1}...`}
                   value={step}
                   onChange={(e) => updateInstruction(idx, e.target.value)}

@@ -6,8 +6,8 @@ async function tableCounts() {
         const tables = await db.raw("SELECT name FROM sys.tables");
         const results = [];
         for (const t of tables) {
-            const count = await db(t.name).count('* as c').first();
-            results.push({ table: t.name, count: count.c });
+            const countResult: any = await db(t.name).count('* as c').first();
+            results.push({ table: t.name, count: countResult?.c || 0 });
         }
         console.log(JSON.stringify(results, null, 2));
         process.exit(0);

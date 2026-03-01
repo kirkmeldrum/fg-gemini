@@ -15,6 +15,7 @@ import SmartScanner from './pages/SmartScannerPage';
 import RecipeIndexer from './pages/RecipeIndexerPage';
 import DashboardPage from './pages/DashboardPage';
 import SmartSearch from './pages/SmartSearchPage';
+import Clipper from './pages/ClipperPage';
 
 // ─── Inner app (has access to AuthContext) ───────────────────────────────────
 function AppInner() {
@@ -87,6 +88,7 @@ function AppInner() {
             case 'profile': return <Profile />;
             case 'smart-search': return <SmartSearch onNavigate={navigate} />;
             case 'smart-scan': return <SmartScanner onNavigate={navigate} />;
+            case 'clipper': return <Clipper onNavigate={navigate} />;
             case 'recipe-indexer': return <RecipeIndexer onScanComplete={(data: any) => navigate('add-recipe', { initialData: data })} onCancel={() => navigate('recipes')} />;
             default: return <DashboardPage onChangeView={navigate} />;
         }

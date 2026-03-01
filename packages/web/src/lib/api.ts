@@ -381,3 +381,49 @@ export const smartSearch = (filters: SmartSearchFilters = {}) => {
 
 export const getSearchStats = () =>
     request<SearchStats>(SEARCH_BASE, '/stats');
+
+// ─── Parse / Clipper ──────────────────────────────────────────────────────────
+
+const PARSE_BASE = '/api/parse';
+
+export interface ExtractedIngredient {
+    original: string;
+    name: string;
+    quantity: number;
+    unit: string;
+    prep?: string;
+    food_node_id?: number;
+}
+
+export interface ExtractedRecipe {
+    title: string;
+    description: string;
+    image?: string;
+    prepTime?: number;
+    cookTime?: number;
+    servings?: number;
+    cuisine?: string;
+    ingredients: ExtractedIngredient[];
+    steps: string[];
+    sourceUrl?: string;
+    logId: number;
+}
+
+export interface ParseHistoryItem {
+    id: number;
+    user_id: number;
+    source_url: string | null;
+    source_type: 'url' | 'text';
+    extraction_method: 'json-ld' | 'ai' | null;
+    status: 'pending' | 'success' | 'partial' | 'failed';
+    created_at: string;
+}
+
+export const parseUrl = (url: string) =>
+    request<ExtractedRecipe>(PARSE_BASE, '/url', { method: 'POST', body: JSON.stringify({ url }) });
+
+export const parseText = (text: string) =>
+    request<ExtractedRecipe>(PARSE_BASE, '/text', { method: 'POST', body: JSON.stringify({ text }) });
+
+export const getParseHistory = () =>
+    request<ParseHistoryItem[]>(PARSE_BASE, '/history');

@@ -1,41 +1,85 @@
+import { useState, useEffect } from 'react';
 import { Card, Badge } from './components';
 import {
     ChefHat, CalendarDays, ShoppingBag, ArrowRight, Star,
-    Flame, TrendingUp, Users, Clock, AlertTriangle, ExternalLink,
+    Flame, TrendingUp, Users, Clock, AlertTriangle,
     Sparkles, Leaf
 } from 'lucide-react';
-import { RECIPES, INITIAL_PANTRY, INITIAL_SHOPPING_LIST, INITIAL_MEAL_PLAN, Recipe, USERS } from './data';
+import {
+    getRecipes,
+    smartSearch,
+    getInventory,
+    getSearchStats,
+    Recipe,
+    SmartRecipeMatch,
+    SearchStats,
+    InventoryItem,
+    getSocialFeed,
+    Activity
+} from '../lib/api';
 
 const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any) => void }) => {
+    const [highMatchRecipes, setHighMatchRecipes] = useState<SmartRecipeMatch[]>([]);
+    const [trendingRecipes, setTrendingRecipes] = useState<Recipe[]>([]);
+    const [newArrivals, setNewArrivals] = useState<Recipe[]>([]);
+    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [searchStats, setSearchStats] = useState<SearchStats | null>(null);
+    const [activities, setActivities] = useState<Activity[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // --- Smart Logic Calculation ---
+    useEffect(() => {
+        const loadDashboardData = async () => {
+            setLoading(true);
+            try {
+                const [
+                    smartResults,
+                    allRecipes,
+                    invData,
+                    statsData,
+                    feedData
+                ] = await Promise.all([
+                    smartSearch({ max_missing: 3 }),
+                    getRecipes({ limit: 6 }),
+                    getInventory(),
+                    getSearchStats(),
+                    getSocialFeed().catch(() => []) // Optional
+                ]);
 
-    // 1. Calculate Recipe Matches based on Inventory
-    const checkInventory = (foodId: number) => {
-        return INITIAL_PANTRY.some(item => item.food_node_id === foodId);
-    };
+                setHighMatchRecipes(smartResults.slice(0, 2));
+                setTrendingRecipes(allRecipes.items.slice(0, 3));
+                setNewArrivals(allRecipes.items.slice(3, 6));
+                setInventory(invData);
+                setSearchStats(statsData);
+                setActivities(feedData.slice(0, 2));
+            } catch (err) {
+                console.error('Failed to load dashboard data:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const getRecipeMatchScore = (recipe: Recipe) => {
-        if (recipe.ingredients.length === 0) return 0;
-        const have = recipe.ingredients.filter(ing => checkInventory(ing.food_node_id)).length;
-        return Math.round((have / recipe.ingredients.length) * 100);
-    };
+        loadDashboardData();
+    }, []);
 
-    const highMatchRecipes = [...RECIPES]
-        .map(r => ({ ...r, score: getRecipeMatchScore(r) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 2);
+    // Derived stats
+    const expiringCount = inventory.filter(i => {
+        if (!i.expiration_date) return false;
+        const expiry = new Date(i.expiration_date);
+        const soon = new Date();
+        soon.setDate(soon.getDate() + 3);
+        return expiry <= soon;
+    }).length;
 
-    // 2. Kitchen Stats
-    const expiringCount = INITIAL_PANTRY.filter(i => i.expiration_date).length;
-    const staleCount = 1;
+    const shoppingCount = 0; // Will be implemented with REQ-009
 
-    // 3. Shopping Stats
-    const shoppingCount = INITIAL_SHOPPING_LIST.filter(i => !i.checked).length;
-
-    // 4. Meal Plan Logic (Next Meal)
-    const nextMealItem = INITIAL_MEAL_PLAN[0];
-    const nextMealRecipe = nextMealItem?.recipe_id ? RECIPES.find(r => r.id === nextMealItem.recipe_id) : null;
+    if (loading) {
+        return (
+            <div className="py-20 text-center text-slate-400 animate-pulse flex flex-col items-center gap-4">
+                <ChefHat size={48} className="text-slate-200" />
+                <span>Preparing your kitchen…</span>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -54,8 +98,8 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                         Ready to cook something <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-lime-400">amazing?</span>
                     </h1>
                     <p className="text-slate-300 text-lg mb-8">
-                        You have <span className="text-white font-semibold">{expiringCount} ingredients</span> to use up.
-                        We've found <span className="text-white font-semibold">{highMatchRecipes.length} recipes</span> matching your inventory.
+                        You have <span className="text-white font-semibold">{inventory.length} ingredients</span> in your pantry.
+                        You can make <span className="text-white font-semibold">{searchStats?.fully_matched ?? 0} recipes</span> right now.
                     </p>
                     <div className="flex flex-wrap gap-3">
                         <button
@@ -93,14 +137,8 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                     </div>
                     <h3 className="text-slate-500 font-medium text-sm">Meal Plan</h3>
                     <div className="mt-1">
-                        {nextMealRecipe ? (
-                            <>
-                                <p className="text-xl font-bold text-slate-800 line-clamp-1">{nextMealRecipe.title}</p>
-                                <p className="text-sm text-slate-500 mt-1 capitalize">{nextMealItem.day} • {nextMealItem.slot}</p>
-                            </>
-                        ) : (
-                            <p className="text-xl font-bold text-slate-800">Nothing planned</p>
-                        )}
+                        <p className="text-xl font-bold text-slate-800">Check Your Plan</p>
+                        <p className="text-sm text-slate-500 mt-1 capitalize">Keep your week organized</p>
                     </div>
                     <div className="mt-4 text-orange-600 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
                         View Schedule <ArrowRight size={16} />
@@ -119,7 +157,6 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                         <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
                             <ShoppingBag size={24} />
                         </div>
-                        {shoppingCount > 0 && <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">{shoppingCount}</span>}
                     </div>
                     <h3 className="text-slate-500 font-medium text-sm">Shopping List</h3>
                     <div className="mt-1">
@@ -143,12 +180,12 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                         <div className="p-2 bg-red-100 text-red-600 rounded-lg">
                             <AlertTriangle size={24} />
                         </div>
-                        <Badge color="red">Action Needed</Badge>
+                        {expiringCount > 0 && <Badge color="red">Action Needed</Badge>}
                     </div>
                     <h3 className="text-slate-500 font-medium text-sm">My Kitchen</h3>
                     <div className="mt-1">
-                        <p className="text-xl font-bold text-slate-800">{expiringCount} expiring soon</p>
-                        <p className="text-sm text-slate-500 mt-1">{staleCount} items likely stale</p>
+                        <p className="text-xl font-bold text-slate-800">{inventory.length} items tracked</p>
+                        <p className="text-sm text-slate-500 mt-1">{expiringCount} items expiring soon</p>
                     </div>
                     <div className="mt-4 text-red-600 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
                         Check Inventory <ArrowRight size={16} />
@@ -167,33 +204,39 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                                 <Leaf className="text-emerald-500" size={24} />
                                 <h2 className="text-xl font-bold text-slate-800">Cook What You Have</h2>
                             </div>
-                            <button onClick={() => onChangeView('recipes')} className="text-sm text-emerald-600 font-medium hover:underline">View All</button>
+                            <button onClick={() => onChangeView('smart-search')} className="text-sm text-emerald-600 font-medium hover:underline">View All Matches</button>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {highMatchRecipes.map(recipe => (
-                                <Card key={recipe.id} className="flex flex-row overflow-hidden hover:shadow-md transition-shadow cursor-pointer group" onClick={() => onChangeView('recipe-detail', { id: recipe.id })}>
-                                    <div className="w-1/3 relative">
-                                        <img src={recipe.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        <div className="absolute top-2 left-2">
-                                            <Badge color="emerald">{recipe.score}% Match</Badge>
-                                        </div>
-                                    </div>
-                                    <div className="w-2/3 p-4 flex flex-col justify-between">
-                                        <div>
-                                            <h3 className="font-bold text-slate-800 mb-1 line-clamp-1">{recipe.title}</h3>
-                                            <div className="flex items-center gap-3 text-xs text-slate-500 mb-2">
-                                                <span className="flex items-center gap-1"><Clock size={12} /> {recipe.prep_time}m</span>
-                                                <span className="flex items-center gap-1"><Users size={12} /> {recipe.servings}</span>
+                        {highMatchRecipes.length === 0 ? (
+                            <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <p className="text-slate-500 text-sm">Add more items to your kitchen to see matches!</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {highMatchRecipes.map(recipe => (
+                                    <Card key={recipe.id} className="flex flex-row overflow-hidden hover:shadow-md transition-shadow cursor-pointer group" onClick={() => onChangeView('recipe-detail', { slug: recipe.slug })}>
+                                        <div className="w-1/3 relative">
+                                            <img src={recipe.image_url || '/placeholder-recipe.jpg'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            <div className="absolute top-2 left-2">
+                                                <Badge color="emerald">{recipe.coverage_percentage}% Match</Badge>
                                             </div>
-                                            <p className="text-xs text-slate-500 line-clamp-2">{recipe.description}</p>
                                         </div>
-                                        <div className="mt-3 flex items-center text-xs text-slate-400">
-                                            Missing: {recipe.ingredients.length - Math.round((recipe.score / 100) * recipe.ingredients.length)} ingredients
+                                        <div className="w-2/3 p-4 flex flex-col justify-between">
+                                            <div>
+                                                <h3 className="font-bold text-slate-800 mb-1 line-clamp-1">{recipe.title}</h3>
+                                                <div className="flex items-center gap-3 text-xs text-slate-500 mb-2">
+                                                    <span className="flex items-center gap-1"><Clock size={12} /> {(recipe.prep_time || 0) + (recipe.cook_time || 0)}m</span>
+                                                    <span className="flex items-center gap-1"><Users size={12} /> {recipe.servings || 0}</span>
+                                                </div>
+                                                <p className="text-xs text-slate-500 line-clamp-2">{recipe.description || 'No description available.'}</p>
+                                            </div>
+                                            <div className="mt-3 flex items-center text-xs text-slate-400">
+                                                Missing: {recipe.missing_ingredients.length} ingredients
+                                            </div>
                                         </div>
-                                    </div>
-                                </Card>
-                            ))}
-                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
                     </section>
 
                     {/* Trending / Popular */}
@@ -203,10 +246,10 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                             <h2 className="text-xl font-bold text-slate-800">Trending Now</h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {RECIPES.slice(0, 3).map(recipe => (
-                                <div key={recipe.id} className="group cursor-pointer" onClick={() => onChangeView('recipe-detail', { id: recipe.id })}>
+                            {trendingRecipes.map(recipe => (
+                                <div key={recipe.id} className="group cursor-pointer" onClick={() => onChangeView('recipe-detail', { slug: recipe.slug })}>
                                     <div className="rounded-xl overflow-hidden mb-3 relative aspect-[4/3]">
-                                        <img src={recipe.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                        <img src={recipe.image_url || '/placeholder-recipe.jpg'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
                                             <div className="flex items-center gap-1 text-white text-xs">
                                                 <Star size={12} className="fill-yellow-400 text-yellow-400" /> 4.9
@@ -214,7 +257,7 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                                         </div>
                                     </div>
                                     <h3 className="font-bold text-slate-800 text-sm mb-1 group-hover:text-emerald-600 transition-colors">{recipe.title}</h3>
-                                    <p className="text-xs text-slate-500">by {recipe.author.name}</p>
+                                    <p className="text-xs text-slate-500">by Admin</p>
                                 </div>
                             ))}
                         </div>
@@ -227,19 +270,33 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                             <h2 className="text-xl font-bold text-slate-800">From Your Network</h2>
                         </div>
                         <Card className="divide-y divide-slate-100">
-                            {[1, 2].map((i) => (
-                                <div key={i} className="p-4 flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
-                                        <img src={USERS[i].avatar} alt={USERS[i].name} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-slate-800">
-                                            <span className="font-bold">{USERS[i].name}</span> cooked <span className="font-semibold text-emerald-600">Homemade Pancakes</span>
-                                        </p>
-                                        <p className="text-xs text-slate-500 mt-1">2 hours ago • 12 likes</p>
-                                    </div>
+                            {activities.length === 0 ? (
+                                <div className="p-8 text-center text-slate-500 text-sm italic">
+                                    No recent activity to show. Connect with friends!
                                 </div>
-                            ))}
+                            ) : (
+                                activities.map((activity) => (
+                                    <div key={activity.id} className="p-4 flex gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex-shrink-0">
+                                            {activity.avatar_url ? (
+                                                <img src={activity.avatar_url} alt={activity.username} />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-emerald-100 text-emerald-600 font-bold uppercase">
+                                                    {activity.username[0]}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-slate-800">
+                                                <span className="font-bold">@{activity.username}</span> {activity.action.replace('_', ' ')}
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                {new Date(activity.created_at).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                             <button
                                 onClick={() => onChangeView('social')}
                                 className="w-full py-3 text-sm text-slate-500 font-medium hover:bg-slate-50 transition-colors"
@@ -254,24 +311,6 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                 {/* Sidebar (Right Column) */}
                 <div className="space-y-8">
 
-                    {/* Sponsored Content */}
-                    <section>
-                        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Sponsored</div>
-                        <Card className="overflow-hidden border-orange-100">
-                            <div className="h-40 relative">
-                                <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=800&q=80" className="w-full h-full object-cover" />
-                                <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold text-slate-500 uppercase tracking-wide">Ad</div>
-                            </div>
-                            <div className="p-4">
-                                <h3 className="font-bold text-slate-800 mb-1">Perfect Pizza Night</h3>
-                                <p className="text-xs text-slate-500 mb-3">Try the new Artisan Dough from Baker's Best. Crispy, airy, and delicious.</p>
-                                <button className="w-full py-2 bg-orange-50 text-orange-700 rounded-lg text-sm font-semibold hover:bg-orange-100 transition-colors flex items-center justify-center gap-2">
-                                    Get Recipe <ExternalLink size={14} />
-                                </button>
-                            </div>
-                        </Card>
-                    </section>
-
                     {/* Fresh Recipes */}
                     <section>
                         <div className="flex items-center gap-2 mb-4">
@@ -279,18 +318,15 @@ const Dashboard = ({ onChangeView }: { onChangeView: (view: string, params?: any
                             <h2 className="text-lg font-bold text-slate-800">New Arrivals</h2>
                         </div>
                         <div className="space-y-4">
-                            {RECIPES.slice(1, 4).map(recipe => (
-                                <div key={recipe.id} className="flex gap-3 group cursor-pointer" onClick={() => onChangeView('recipe-detail', { id: recipe.id })}>
-                                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                                        <img src={recipe.image} className="w-full h-full object-cover" />
+                            {newArrivals.map(recipe => (
+                                <div key={recipe.id} className="flex gap-3 group cursor-pointer" onClick={() => onChangeView('recipe-detail', { slug: recipe.slug })}>
+                                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100">
+                                        <img src={recipe.image_url || '/placeholder-recipe.jpg'} className="w-full h-full object-cover" />
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-bold text-slate-800 line-clamp-1 group-hover:text-purple-600 transition-colors">{recipe.title}</h4>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <div className="w-5 h-5 rounded-full bg-slate-200 overflow-hidden">
-                                                <img src={recipe.author.avatar} />
-                                            </div>
-                                            <span className="text-xs text-slate-500">{recipe.author.name}</span>
+                                            <span className="text-xs text-slate-500">{recipe.cuisine || 'Global'}</span>
                                         </div>
                                     </div>
                                 </div>

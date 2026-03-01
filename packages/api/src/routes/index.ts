@@ -34,6 +34,10 @@ apiRoutes.use('/social', socialRoutes);
 import searchRoutes from './search.js';
 apiRoutes.use('/search', searchRoutes);
 
+// Sprint 1.7: AI Recipe Clipper
+import parseRoutes from './parse.js';
+apiRoutes.use('/parse', parseRoutes);
+
 // Placeholder root route
 apiRoutes.get('/', (_req, res) => {
     res.json({

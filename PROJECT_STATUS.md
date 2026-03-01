@@ -45,6 +45,8 @@
 
 ### Sprint 1.3 — Recipe Browsing (✅ Complete)
 - REQ-003 implemented: Full-stack recipe search, list, and detail views.
+- **Fixed:** Resolved "Recipe Not Found" error by correcting `is_deleted` logic in the backend and ensuring `slug`-based navigation in the frontend.
+- **Ensured cross-functionality:** Integrated real API data into Dashboard and Recipes pages, and fixed Encyclopedia navigation.
 
 ### Sprint 1.4 — Inventory & Pantry (✅ Complete)
 - REQ-006 implemented: Pantry management, storage locations, and automated matching.
@@ -58,6 +60,13 @@
 - REQ-006.3, 006.4 implemented: Taxonomy-aware matching (ancestors) and substitution weighting (0.75/0.5).
 - Fixed white-screen crash in Smart Search and unresponsive Social Network search.
 - Added URL synchronization for better navigation.
+
+### Sprint 1.7 — AI Recipe Clipper (✅ Complete)
+- REQ-007.1 (URL Parsing): JSON-LD extraction with AI fallback implemented in `recipeParser.ts`.
+- REQ-007.6 (Review Workflow): `ClipperPage` UI created for review and structured import.
+- REQ-007.7 (History): `recipe_parse_log` integrated with frontend history view.
+- REQ-007.8 (Text Extraction): AI text parsing backend and frontend supported.
+- **Improved UI:** Added a Zap icon (Import) to the Recipes page for quick access.
 
 ---
 
