@@ -117,3 +117,47 @@ export async function getMatchingRecipes(userId: number, householdId: number | n
 
     return recipes;
 }
+
+/**
+ * Deduct recipe ingredients from user inventory (Mark as Cooked)
+ */
+export async function deductRecipeIngredients(userId: number, householdId: number | null, recipeId: number, servings: number) {
+    return db.transaction(async (trx) => {
+        // 1. Get ingredients for the recipe
+        const recipeIngredients = await trx('recipe_ingredients')
+            .where({ recipe_id: recipeId })
+            .whereNotNull('ingredient_id');
+
+        // 2. For each ingredient, find matching items in inventory and deduct
+        for (const ing of recipeIngredients) {
+            // Calculate how much we need based on servings
+            const neededQuantity = (ing.quantity || 0) * servings;
+
+            // Try to find matching item in inventory
+            const inventoryItems = await trx('user_inventory')
+                .where({ ingredient_id: ing.ingredient_id, is_deleted: false })
+                .modify((qb) => {
+                    if (householdId) qb.where({ household_id: householdId });
+                    else qb.where({ user_id: userId });
+                })
+                .orderBy('expiration_date', 'asc'); // Deduct from soonest expiring first
+
+            let remainingToDeduct = neededQuantity;
+            for (const item of inventoryItems) {
+                if (remainingToDeduct <= 0) break;
+
+                const deduction = Math.min(item.quantity, remainingToDeduct);
+                const newQuantity = Math.max(0, item.quantity - deduction);
+
+                await trx('user_inventory')
+                    .where({ id: item.id })
+                    .update({
+                        quantity: newQuantity,
+                        updated_at: trx.fn.now()
+                    });
+
+                remainingToDeduct -= deduction;
+            }
+        }
+    });
+}

@@ -38,6 +38,10 @@ apiRoutes.use('/search', searchRoutes);
 import parseRoutes from './parse.js';
 apiRoutes.use('/parse', parseRoutes);
 
+// Sprint 1.8: Meal Planner
+import mealPlanRoutes from './mealPlan.js';
+apiRoutes.use('/mealplan', mealPlanRoutes);
+
 // Placeholder root route
 apiRoutes.get('/', (_req, res) => {
     res.json({

@@ -427,3 +427,46 @@ export const parseText = (text: string) =>
 
 export const getParseHistory = () =>
     request<ParseHistoryItem[]>(PARSE_BASE, '/history');
+
+// ─── Meal Plan ────────────────────────────────────────────────────────────────
+
+const MEALPLAN_BASE = '/api/mealplan';
+
+export interface MealPlanItem {
+    id: number;
+    user_id: number;
+    household_id: number | null;
+    recipe_id: number | null;
+    plan_date: string;
+    meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+    servings: number;
+    is_cooked: boolean;
+    notes: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface NutritionSummary {
+    total_calories: number;
+    total_protein: number;
+    total_carbs: number;
+    total_fat: number;
+}
+
+export const getMealPlan = (startDate: string, endDate: string) =>
+    request<MealPlanItem[]>(MEALPLAN_BASE, `/?startDate=${startDate}&endDate=${endDate}`);
+
+export const addToMealPlan = (item: Partial<MealPlanItem>) =>
+    request<MealPlanItem>(MEALPLAN_BASE, '/', { method: 'POST', body: JSON.stringify(item) });
+
+export const updateMealPlan = (id: number, updates: Partial<MealPlanItem>) =>
+    request<MealPlanItem>(MEALPLAN_BASE, `/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
+
+export const removeFromMealPlan = (id: number) =>
+    request<void>(MEALPLAN_BASE, `/${id}`, { method: 'DELETE' });
+
+export const getMealPlanNutrition = (startDate: string, endDate: string) =>
+    request<NutritionSummary>(MEALPLAN_BASE, `/nutrition?startDate=${startDate}&endDate=${endDate}`);
+
+export const generateShoppingFromPlan = (startDate: string, endDate: string) =>
+    request<{ count: number }>(MEALPLAN_BASE, '/generate-shopping', { method: 'POST', body: JSON.stringify({ startDate, endDate }) });

@@ -1,8 +1,8 @@
 # FoodGenie — Project Status
 
-**Last Updated:** 2026-02-27
-**Phase:** Phase 4 — Build (Sprint 1.7 Ready)
-**Sprint Focus:** Sprint 1.7 — AI Recipe Clipper
+**Last Updated:** 2026-03-01
+**Phase:** Phase 4 — Build (Data Migration & Modernization)
+**Sprint Focus:** Sprint 1.10 — Legacy Data Ingestion & Taxonomy Upgrade
 
 ---
 
@@ -86,5 +86,25 @@ v1.0 DDL finalized for both SQL Server (dev) and PostgreSQL (prod).
 
 ---
 
+## Current Sprint: Sprint 1.10 — Data Migration & Modernization
+
+**Goal:** Ingest legacy Allrecipes dataset and upgrade taxonomy/scraping.
+
+### Tasks
+| # | Task | REQ | Status | Notes |
+|---|------|-----|--------|-------|
+| 35 | Analyze legacy SQL dump (`FoodGenie_test_FULL_DB_1_8_13.sql`) | DATA-001 | ✅ | Extract schemas |
+| 36 | Profile `a-z.csv` for ingredient relationship mapping | DATA-002 | ✅ | |
+| 37 | Create `extract_legacy_data.ts` migration script | DATA-003 | ✅ | Expanded with taxonomy tables |
+| 38 | Create `trial_import.ts` for database ingestion | DATA-004 | ✅ | Loaded 97 recipes & 347 ingredients |
+| 39 | Perform trial import of top 100 recipes | DATA-005 | ✅ | Verified connectivity & schema mapping |
+| 40 | Implement Materialized Path conversion logic | DATA-006 | ✅ | Mapped 48 categories/supplies to hierarchy |
+
+---
+
 ## Session Resumption
-**Next task**: Begin Sprint 1.8 — Meal Planner (REQ-008).
+**Next task**: Perform **Bulk Data Ingestion**.
+1. Update `extract_legacy_data.ts` to remove the 100-recipe limit and pull ALL 13,000+ packaged food items.
+2. Execute `extract_legacy_data.ts` and `import_taxonomy.ts`.
+3. Run `trial_import.ts` for a 1,000+ recipe batch.
+4. Verify "AI Mapping Pass" requirements: Standardizing names and auto-categorizing ingredients for Materialized Path correctness.
