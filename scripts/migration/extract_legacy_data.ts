@@ -70,16 +70,13 @@ async function extractLegacyData() {
     });
 
     let currentTable = '';
-    const MAX_RECIPES = 100;
     const recipeIds = new Set<number>();
 
     for await (const line of rl) {
         if (line.includes('INSERT INTO `rs_recipes` VALUES')) {
-            if (recipes.length >= MAX_RECIPES) continue;
-
             const values = parseInsertValues(line);
             for (const row of values) {
-                if (recipes.length >= MAX_RECIPES) break;
+
                 // Based on schema view: 
                 // recipe_id(0), user_id(1), recipe_name(2), image(3), recipe_photo(4), recipe_video_url(5), 
                 // recipe_difficulty(6), recipe_preparation_time(7), recipe_preparation_time_unit(8), 
@@ -166,14 +163,13 @@ async function extractLegacyData() {
         }
     }
 
-    // Filter packaged foods to only those used in our sample recipes
-    const usedIngredientIds = new Set(recipeIngredients.map(i => i.ingr_id));
-    const filteredPackagedFoods = Array.from(packagedFoods.values()).filter(pf => usedIngredientIds.has(pf.pf_id));
+    // Use all packaged foods, not just those used in sample recipes
+    const allPackagedFoods = Array.from(packagedFoods.values());
 
     const finalData = {
         recipes,
         recipeIngredients,
-        packagedFoods: filteredPackagedFoods,
+        packagedFoods: allPackagedFoods,
         categories,
         cookingSupplies
     };
@@ -182,7 +178,7 @@ async function extractLegacyData() {
     console.log(`Extraction complete!`);
     console.log(`Recipes: ${recipes.length}`);
     console.log(`Recipe Ingredients: ${recipeIngredients.length}`);
-    console.log(`Packaged Foods: ${filteredPackagedFoods.length}`);
+    console.log(`Packaged Foods: ${allPackagedFoods.length}`);
     console.log(`Results saved to: ${OUTPUT_FILE_PATH}`);
 }
 

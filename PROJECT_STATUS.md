@@ -11,11 +11,12 @@
 | Layer | Status | Notes |
 |-------|--------|-------|
 | Documentation | ✅ Updated | Refactored to ENT_SDLC_v2.0 |
-| Database DDL | ✅ Complete | v1.0 — 22 tables in `database/ddl/` |
+| Database DDL | ✅ Complete | v1.1 — Added password reset tokens |
 | Shared Types | ✅ Complete | @foodgenie/shared packages |
 | API Backend | ✅ Complete | Express server scaffold in `packages/api/` |
 | Frontend | ✅ Complete | Vite + React scaffold in `packages/web/` |
 | AI Framework | ✅ v2.0 | ENT_SDLC_v2.0 skills and templates installed |
+| Data Migration | 🟡 In Progress | 13,113 ingredients & 98 recipes imported |
 | Deployment | ⬜ Phase 3 | AWS — not started |
 
 ---
@@ -103,8 +104,13 @@ v1.0 DDL finalized for both SQL Server (dev) and PostgreSQL (prod).
 ---
 
 ## Session Resumption
-**Next task**: Perform **Bulk Data Ingestion**.
-1. Update `extract_legacy_data.ts` to remove the 100-recipe limit and pull ALL 13,000+ packaged food items.
-2. Execute `extract_legacy_data.ts` and `import_taxonomy.ts`.
-3. Run `trial_import.ts` for a 1,000+ recipe batch.
-4. Verify "AI Mapping Pass" requirements: Standardizing names and auto-categorizing ingredients for Materialized Path correctness.
+**Next task**: Perform **Bulk Recipe & Ingredient Ingestion** using validated data sources.
+1. **Source Review**: Examine `temp_recipes_with_allrecipes.sql` (48k+ recipes) and `a-z.csv` (cleaned ingredients) to map schemas.
+   - SQL Path: `C:\Users\kirkm\OneDrive\FOODGENIE\Data\RecipeIndexingScripts\Databases\Temp Tables\temp_recipes_with_allrecipes.sql`
+   - CSV Path: `C:\Users\kirkm\OneDrive\FOODGENIE\Data\RecipeIndexingScripts\Working Data\a-z.csv`
+2. **Bulk Recipe Import**: Update `extract_legacy_data.ts` to ingest the full Allrecipes dataset, ensuring original `recipe_id` is preserved or mapped correctly for ingredient linking.
+3. **Ingredient Sync**: Profile `a-z.csv` to ensure all unique ingredients are present in the `ingredients` table (creating any missing canonical entries).
+4. **Recipe Ingredients Mapping**: Ingest `a-z.csv` into `recipe_ingredients` table, using the cross-reference between `recipe_id` and `ingredient_id`.
+5. **Validation**: Verify that all 48k recipes have their corresponding cleaned ingredients linked successfully.
+
+**Important Note:** Do not assume data needs to be parsed or generated if a raw/parsed version might already exist. Always ask the user before attempting complex extraction.
