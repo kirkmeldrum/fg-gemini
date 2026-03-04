@@ -7,6 +7,7 @@ const RECIPE_BASE = '/api/recipes';
 const INVENTORY_BASE = '/api/inventory';
 const SHOPPING_BASE = '/api/shopping';
 const INGREDIENT_BASE = '/api/ingredients';
+const FOOD_BASE = '/api/food';
 
 export interface ApiUser {
     id: number;
@@ -157,6 +158,7 @@ export interface Recipe {
     cook_time: number;
     author_id: number | null;
     privacy: 'public' | 'private';
+    is_gold_standard: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -168,6 +170,9 @@ export interface Ingredient {
     quantity: number | null;
     unit: string | null;
     sort_order: number;
+    ingredient_name?: string;
+    brand_name?: string;
+    ingredient_type?: string;
 }
 
 export interface Step {
@@ -189,12 +194,13 @@ export interface RecipeListResponse {
     offset: number;
 }
 
-export const getRecipes = (params: { query?: string; cuisine?: string; limit?: number; offset?: number }) => {
+export const getRecipes = (params: { query?: string; cuisine?: string; limit?: number; offset?: number; is_gold_standard?: boolean }) => {
     const search = new URLSearchParams();
     if (params.query) search.set('query', params.query);
     if (params.cuisine) search.set('cuisine', params.cuisine);
     if (params.limit) search.set('limit', params.limit.toString());
     if (params.offset) search.set('offset', params.offset.toString());
+    if (params.is_gold_standard !== undefined) search.set('is_gold_standard', params.is_gold_standard.toString());
     const queryStr = search.toString();
     return request<RecipeListResponse>(RECIPE_BASE, queryStr ? `/?${queryStr}` : '/');
 };
@@ -254,6 +260,8 @@ export interface ShoppingItem {
     source_recipe_id: number | null;
     source_label: string | null;
     checked_at: string | null;
+    category_name?: string;
+    category_slug?: string;
 }
 
 export const getShoppingList = () =>
@@ -287,6 +295,39 @@ export const getIngredients = (query?: string) => {
     return request<FoodIngredient[]>(INGREDIENT_BASE, search);
 };
 
+export interface FoodCategory {
+    id: number;
+    name: string;
+    slug: string;
+    parent_id: number | null;
+    description?: string;
+    image_url?: string;
+}
+
+export interface CategoryDetail extends FoodCategory {
+    categories: FoodCategory[];
+    ingredients: FoodIngredient[];
+    ancestry: FoodCategory[];
+}
+
+export interface IngredientDetail extends FoodIngredient {
+    description?: string;
+    image_url?: string;
+    ancestry: FoodCategory[];
+}
+
+export const getTopCategories = () =>
+    request<FoodCategory[]>(FOOD_BASE, '/categories/top');
+
+export const getCategoryDetail = (id: number) =>
+    request<CategoryDetail>(FOOD_BASE, `/categories/${id}`);
+
+export const getIngredientDetail = (id: number) =>
+    request<IngredientDetail>(FOOD_BASE, `/ingredients/${id}`);
+
+export const searchFood = (query: string) =>
+    request<{ categories: FoodCategory[], ingredients: FoodIngredient[] }>(FOOD_BASE, `/search?q=${encodeURIComponent(query)}`);
+
 // ─── Social ───────────────────────────────────────────────────────────────────
 
 const SOCIAL_BASE = '/api/social';
@@ -312,7 +353,7 @@ export interface FriendRequest {
 export interface Activity {
     id: number;
     user_id: number;
-    action: 'posted_recipe' | 'rated_recipe' | 'cooked_meal' | 'followed_user';
+    action: 'posted_recipe' | 'rated_recipe' | 'cooked_meal' | 'followed_user' | 'status_update';
     target_id: number | null;
     target_type: 'recipe' | 'user' | 'meal_plan' | null;
     payload: string | null;
@@ -335,11 +376,35 @@ export const searchUsers = (query: string) =>
 export const sendFriendRequest = (friendId: number) =>
     request<{ id: number }>(SOCIAL_BASE, `/request/${friendId}`, { method: 'POST' });
 
+export interface FriendProfile {
+    user: {
+        id: number;
+        username: string;
+        first_name: string;
+        last_name: string;
+        avatar_url: string | null;
+        bio?: string;
+        location?: string;
+    };
+    recipes: Recipe[];
+    mealPlan: MealPlanItem[];
+    inventory: InventoryItem[];
+}
+
 export const acceptFriendRequest = (friendId: number) =>
     request<void>(SOCIAL_BASE, `/request/${friendId}/accept`, { method: 'PATCH' });
 
+export const rejectFriendRequest = (friendId: number) =>
+    request<void>(SOCIAL_BASE, `/request/${friendId}`, { method: 'DELETE' });
+
+export const postStatusUpdate = (content: string) =>
+    request<{ id: number }>(SOCIAL_BASE, '/post', { method: 'POST', body: JSON.stringify({ content }) });
+
 export const getSocialFeed = () =>
     request<Activity[]>(SOCIAL_BASE, '/feed');
+
+export const getFriendProfile = (friendId: number) =>
+    request<FriendProfile>(SOCIAL_BASE, `/profile/${friendId}`);
 
 // ─── Smart Search ─────────────────────────────────────────────────────────────
 
@@ -350,6 +415,14 @@ export interface SmartRecipeMatch extends Recipe {
     owned_ingredients: number;
     coverage_percentage: number;
     missing_ingredients: string[];
+    score: number;
+}
+
+export interface SmartSearchResponse {
+    items: SmartRecipeMatch[];
+    total: number;
+    limit: number;
+    offset: number;
 }
 
 export interface SearchStats {
@@ -365,6 +438,14 @@ export interface SmartSearchFilters {
     difficulty?: string;
     max_missing?: number;
     pantry?: boolean;
+    limit?: number;
+    offset?: number;
+}
+
+export interface GlobalSearchResult {
+    recipes: Recipe[];
+    ingredients: FoodIngredient[];
+    categories: { id: number; name: string; slug: string; path?: string }[];
 }
 
 export const smartSearch = (filters: SmartSearchFilters = {}) => {
@@ -374,9 +455,15 @@ export const smartSearch = (filters: SmartSearchFilters = {}) => {
     if (filters.difficulty) search.set('difficulty', filters.difficulty);
     if (filters.max_missing !== undefined) search.set('max_missing', filters.max_missing.toString());
     if (filters.pantry !== undefined) search.set('pantry', filters.pantry.toString());
+    if (filters.limit !== undefined) search.set('limit', filters.limit.toString());
+    if (filters.offset !== undefined) search.set('offset', filters.offset.toString());
 
     const queryStr = search.toString();
-    return request<SmartRecipeMatch[]>(SEARCH_BASE, queryStr ? `/smart?${queryStr}` : '/smart');
+    return request<SmartSearchResponse>(SEARCH_BASE, queryStr ? `/smart?${queryStr}` : '/smart');
+};
+
+export const globalSearch = (query: string) => {
+    return request<GlobalSearchResult>(SEARCH_BASE, `/?q=${encodeURIComponent(query)}`);
 };
 
 export const getSearchStats = () =>

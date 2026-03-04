@@ -4,6 +4,7 @@
 // ============================================
 
 import { db } from '../config/database.js';
+import { transformRecipeImages } from '../utils/imageUtils.js';
 
 /**
  * Find recipes with filtering and pagination
@@ -15,10 +16,15 @@ export async function find(params: {
     offset?: number;
     userId?: number;
     visibility?: 'all' | 'public' | 'private';
+    is_gold_standard?: boolean;
 }) {
-    const { query, cuisine, limit = 20, offset = 0, userId, visibility = 'public' } = params;
+    const { query, cuisine, limit = 20, offset = 0, userId, visibility = 'public', is_gold_standard } = params;
 
     const q = db('recipes').where('is_deleted', false);
+
+    if (is_gold_standard !== undefined) {
+        q.where('is_gold_standard', is_gold_standard);
+    }
 
     if (visibility === 'public') {
         q.where('privacy', 'public');
@@ -44,10 +50,12 @@ export async function find(params: {
     }
 
     const [count] = await q.clone().count<{ count: number }[]>('* as count');
-    const items = await q.limit(limit).offset(offset).orderBy('created_at', 'desc');
+    const items = await q.limit(limit).offset(offset)
+        .orderBy('is_gold_standard', 'desc')
+        .orderBy('created_at', 'desc');
 
     return {
-        items,
+        items: transformRecipeImages(items),
         total: count.count,
         limit,
         offset,
@@ -64,16 +72,23 @@ export async function findBySlug(slug: string) {
 
     if (!recipe) return null;
 
-    const ingredients = await db('recipe_ingredients')
-        .where({ recipe_id: recipe.id })
-        .orderBy('sort_order', 'asc');
+    const ingredients = await db('recipe_ingredients as ri')
+        .leftJoin('ingredients as i', 'ri.ingredient_id', 'i.id')
+        .where({ 'ri.recipe_id': recipe.id })
+        .select(
+            'ri.*',
+            'i.name as ingredient_name',
+            'i.brand_name',
+            'i.ingredient_type'
+        )
+        .orderBy('ri.sort_order', 'asc');
 
     const steps = await db('recipe_steps')
         .where({ recipe_id: recipe.id })
         .orderBy('step_number', 'asc');
 
     return {
-        ...recipe,
+        ...transformRecipeImages([recipe])[0],
         ingredients,
         steps,
     };
@@ -89,16 +104,23 @@ export async function findById(id: number) {
 
     if (!recipe) return null;
 
-    const ingredients = await db('recipe_ingredients')
-        .where({ recipe_id: id })
-        .orderBy('sort_order', 'asc');
+    const ingredients = await db('recipe_ingredients as ri')
+        .leftJoin('ingredients as i', 'ri.ingredient_id', 'i.id')
+        .where({ 'ri.recipe_id': id })
+        .select(
+            'ri.*',
+            'i.name as ingredient_name',
+            'i.brand_name',
+            'i.ingredient_type'
+        )
+        .orderBy('ri.sort_order', 'asc');
 
     const steps = await db('recipe_steps')
         .where({ recipe_id: id })
         .orderBy('step_number', 'asc');
 
     return {
-        ...recipe,
+        ...transformRecipeImages([recipe])[0],
         ingredients,
         steps,
     };

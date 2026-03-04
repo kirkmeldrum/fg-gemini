@@ -12,8 +12,10 @@
     },
     "dependencies": {
         "@foodgenie/shared": "workspace:*",
+        "axios": "^1.13.6",
         "bcryptjs": "^2.4.3",
         "cors": "^2.8.5",
+        "csv-parse": "^6.1.0",
         "dotenv": "^17.3.1",
         "express": "^4.21.0",
         "express-session": "^1.18.0",

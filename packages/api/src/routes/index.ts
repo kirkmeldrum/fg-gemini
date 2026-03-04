@@ -21,10 +21,12 @@ apiRoutes.use('/recipes', recipeRoutes);
 import ingredientRoutes from './ingredient.js';
 import inventoryRoutes from './inventory.js';
 import shoppingRoutes from './shopping.js';
+import foodRoutes from './food.js';
 
 apiRoutes.use('/ingredients', ingredientRoutes);
 apiRoutes.use('/inventory', inventoryRoutes);
 apiRoutes.use('/shopping', shoppingRoutes);
+apiRoutes.use('/food', foodRoutes);
 
 // Sprint 1.5: Social & Community
 import socialRoutes from './social.js';

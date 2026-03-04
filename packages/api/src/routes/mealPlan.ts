@@ -1,6 +1,7 @@
 import { Router, type IRouter, Request, Response, NextFunction } from 'express';
 import * as mealPlanRepo from '../db/mealPlanRepository.js';
 import * as inventoryRepo from '../db/inventoryRepository.js';
+import { socialRepository } from '../db/socialRepository.js';
 import { requireAuth } from '../middleware/auth.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { db } from '../config/database.js';
@@ -81,6 +82,9 @@ router.patch('/:id', requireAuth, async (req: Request, res: Response, next: Next
         if (markingAsCooked && existing.recipe_id) {
             const servings = req.body.servings || existing.servings || 1;
             await inventoryRepo.deductRecipeIngredients(userId, householdId, existing.recipe_id, servings);
+
+            // Log social activity
+            await socialRepository.logActivity(userId, 'cooked_meal', existing.recipe_id, 'recipe');
         }
 
         res.json({

@@ -24,12 +24,14 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         const cuisine = req.query.cuisine as string | undefined;
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
         const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+        const is_gold_standard = req.query.is_gold_standard !== undefined ? req.query.is_gold_standard === 'true' : undefined;
 
         const results = await recipeRepo.find({
             query,
             cuisine,
             limit,
             offset,
+            is_gold_standard,
         });
 
         res.json({

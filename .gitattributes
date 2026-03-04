@@ -1,0 +1,27 @@
+# Set default behavior to handle line endings automatically.
+* text=auto
+
+# Explicitly declare text files you want to always be LF or CRLF
+# but usually text=auto is best for cross-platform.
+# On Windows, Git will checkout CRLF and commit LF.
+*.txt text
+*.md text
+*.ts text
+*.tsx text
+*.json text
+*.yaml text
+*.yml text
+*.sql text
+*.css text
+*.html text
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.mov binary
+*.mp4 binary
+*.csv text eol=lf

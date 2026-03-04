@@ -38,3 +38,10 @@ coverage/
 
 # Uploads
 uploads/
+
+# Data Assets
+assets/images/
+assets/raw/
+*.csv
+*.txt
+hf_recipes_full.csv

@@ -447,7 +447,7 @@ CREATE TABLE user_inventory (
     id                  INT IDENTITY(1,1) PRIMARY KEY,
     user_id             INT             NOT NULL,
     household_id        INT             NULL,
-    ingredient_id       INT             NOT NULL,
+    ingredient_id       INT             NULL,
     product_name        NVARCHAR(255)   NULL,
     quantity            DECIMAL(10,3)   NOT NULL DEFAULT 1,
     unit                NVARCHAR(50)    NOT NULL,

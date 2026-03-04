@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Check, Plus, Trash2, ArrowRightCircle, ListChecks, Search } from 'lucide-react';
+import { ShoppingBag, Check, Plus, Trash2, ArrowRightCircle, ListChecks, Search, Archive } from 'lucide-react';
 import { Button, Card, Badge, Modal, Input } from '../components/ui';
 import {
   getShoppingList,
@@ -73,12 +73,14 @@ export default function ShoppingListPage() {
     }
   };
 
-  const handleMoveToPantry = async () => {
-    const checkedItems = items.filter(i => i.is_checked);
+  const handleMoveToPantry = async (targetItems?: ShoppingItem[]) => {
+    const moveItems = targetItems || items.filter(i => i.is_checked);
+    if (moveItems.length === 0) return;
+
     try {
-      for (const item of checkedItems) {
+      for (const item of moveItems) {
         await addInventoryItem({
-          ingredient_id: item.ingredient_id || 0, // Fallback if not linked
+          ingredient_id: item.ingredient_id || 0,
           product_name: item.name_display,
           quantity: item.quantity || 1,
           unit: item.unit || 'pcs',
@@ -93,12 +95,25 @@ export default function ShoppingListPage() {
     }
   };
 
+  const handleMoveAllToPantry = () => {
+    if (window.confirm("Move all items from your shopping list to your inventory?")) {
+      handleMoveToPantry(items);
+    }
+  };
+
   const checkedCount = items.filter(i => i.is_checked).length;
 
   const filteredItems = items.filter(item =>
     item.name_display.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.source_label?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const groupedItems = filteredItems.reduce((acc, item) => {
+    const cat = item.category_name || 'Other';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {} as Record<string, ShoppingItem[]>);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -143,7 +158,7 @@ export default function ShoppingListPage() {
           <div className="flex justify-between items-center px-2">
             <div className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest">
               <ListChecks size={16} />
-              {items.length} Items
+              {items.length} Items across {Object.keys(groupedItems).length} categories
             </div>
             {checkedCount > 0 && (
               <Button
@@ -154,45 +169,77 @@ export default function ShoppingListPage() {
                 <ArrowRightCircle size={14} className="mr-1.5" /> MOVE {checkedCount} TO PANTRY
               </Button>
             )}
+            {items.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleMoveAllToPantry}
+                className="text-xs h-8 px-4 font-black border-slate-200"
+              >
+                <Archive size={14} className="mr-1.5" /> MOVE ALL
+              </Button>
+            )}
           </div>
 
-          <Card className="divide-y divide-slate-100 shadow-xl shadow-slate-200/40 p-0 overflow-hidden border-none rounded-2xl">
-            {filteredItems.map((item) => (
-              <div
-                key={item.id}
-                className={`p-4 flex items-center justify-between group transition-all duration-300 ${item.is_checked ? 'bg-slate-50/50' : 'hover:bg-blue-50/30'}`}
-              >
-                <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => handleToggleItem(item.id, item.is_checked)}>
-                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ${item.is_checked ? 'bg-blue-500 border-blue-500 text-white scale-110 shadow-md shadow-blue-100' : 'border-slate-200 bg-white group-hover:border-blue-400'
-                    }`}>
-                    {item.is_checked && <Check size={14} strokeWidth={4} />}
-                  </div>
-                  <div>
-                    <p className={`text-lg font-bold transition-all duration-300 ${item.is_checked ? 'text-slate-300 line-through italic' : 'text-slate-700'}`}>
-                      {item.name_display}
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <p className={`text-xs font-black uppercase tracking-tighter ${item.is_checked ? 'text-slate-300' : 'text-slate-400'}`}>
-                        {item.quantity} {item.unit}
-                      </p>
-                      {item.source_label && (
-                        <Badge color="blue" className="text-[10px] py-0 px-1.5 opacity-60">
-                          {item.source_label}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
+          <div className="space-y-10">
+            {Object.entries(groupedItems).sort(([a], [b]) => a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b)).map(([category, catItems]) => (
+              <div key={category} className="space-y-4">
+                <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3 ml-1">
+                  <span className="w-8 h-px bg-slate-100"></span>
+                  {category}
+                  <span className="flex-1 h-px bg-slate-100"></span>
+                </h2>
 
-                <button
-                  onClick={() => handleDeleteItem(item.id)}
-                  className="text-slate-200 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-xl transition-all"
-                >
-                  <Trash2 size={18} />
-                </button>
+                <Card className="divide-y divide-slate-100 shadow-xl shadow-slate-200/40 p-0 overflow-hidden border-none rounded-2xl">
+                  {catItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`p-4 flex items-center justify-between group transition-all duration-300 ${item.is_checked ? 'bg-slate-50/50' : 'hover:bg-blue-50/10'}`}
+                    >
+                      <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => handleToggleItem(item.id, item.is_checked)}>
+                        <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ${item.is_checked ? 'bg-blue-500 border-blue-500 text-white scale-110 shadow-md shadow-blue-100' : 'border-slate-200 bg-white group-hover:border-blue-400'
+                          }`}>
+                          {item.is_checked && <Check size={14} strokeWidth={4} />}
+                        </div>
+                        <div>
+                          <p className={`text-lg font-bold transition-all duration-300 ${item.is_checked ? 'text-slate-300 line-through italic' : 'text-slate-700'}`}>
+                            {item.name_display}
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <p className={`text-xs font-black uppercase tracking-tighter ${item.is_checked ? 'text-slate-300' : 'text-slate-400'}`}>
+                              {item.quantity} {item.unit}
+                            </p>
+                            {item.source_label && (
+                              <Badge color="blue" className="text-[10px] py-0 px-1.5 opacity-60">
+                                {item.source_label}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleMoveToPantry([item])}
+                          className="text-slate-300 hover:text-emerald-500 hover:bg-emerald-50 p-2.5 rounded-xl transition-all"
+                          title="Move to Kitchen"
+                        >
+                          <Archive size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="text-slate-200 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-xl transition-all"
+                          title="Delete Item"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </Card>
               </div>
             ))}
-          </Card>
+          </div>
         </div>
       )}
 

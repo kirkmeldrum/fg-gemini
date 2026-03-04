@@ -1,5 +1,6 @@
 
 import { db } from '../config/database.js';
+import { transformRecipeImages } from '../utils/imageUtils.js';
 
 export interface SearchFilters {
     max_missing?: number;
@@ -7,6 +8,15 @@ export interface SearchFilters {
     difficulty?: string;
     query?: string;
     assume_pantry_staples?: boolean;
+    limit?: number;
+    offset?: number;
+}
+
+export interface SmartSearchResponse {
+    items: RecipeMatchResult[];
+    total: number;
+    limit: number;
+    offset: number;
 }
 
 export interface RecipeMatchResult {
@@ -19,6 +29,7 @@ export interface RecipeMatchResult {
     prep_time: number | null;
     cook_time: number | null;
     servings: number | null;
+    is_gold_standard: boolean;
     total_ingredients: number;
     owned_ingredients: number;
     coverage_percentage: number;
@@ -108,7 +119,7 @@ export async function smartSearch(userId: number, householdId: number | null, fi
 
     const recipes = await baseQuery;
     const recipeIds = recipes.map(r => r.id);
-    if (recipeIds.length === 0) return [];
+    if (recipeIds.length === 0) return { items: [], total: 0, limit: filters.limit ?? 24, offset: filters.offset ?? 0 };
 
     const allRecipeIngredients = await db('recipe_ingredients')
         .select('recipe_id', 'ingredient_id', 'name_display', 'is_optional')
@@ -158,22 +169,81 @@ export async function smartSearch(userId: number, householdId: number | null, fi
     });
 
     const maxMissing = filters.max_missing ?? 5;
-
-    return matches
+    const filteredMatches = matches
         .filter(m => (m.total_ingredients - m.owned_ingredients) <= maxMissing)
-        .sort((a, b) => b.coverage_percentage - a.coverage_percentage);
+        .map(m => {
+            // Calculate a weighted score
+            // 1. Coverage is the base (0-100)
+            // 2. Gold Standard provides a 15-point boost
+            // 3. Complexity/Time could be future factors
+            let score = m.coverage_percentage;
+            if (m.is_gold_standard) score += 15;
+
+            return { ...m, score };
+        })
+        .sort((a: any, b: any) => b.score - a.score || b.coverage_percentage - a.coverage_percentage);
+
+    const limit = filters.limit ?? 24;
+    const offset = filters.offset ?? 0;
+    const paginated = filteredMatches.slice(offset, offset + limit);
+
+    return {
+        items: transformRecipeImages(paginated),
+        total: filteredMatches.length,
+        limit,
+        offset
+    };
 }
 
 /**
  * Get coverage stats (REQ-006.1)
  */
 export async function getCoverageStats(userId: number, householdId: number | null) {
-    const allMatches = await smartSearch(userId, householdId, { max_missing: 100 });
+    const response = await smartSearch(userId, householdId, { max_missing: 100, limit: 10000 });
+    const allMatches = response.items;
 
     return {
         total: allMatches.length,
-        fully_matched: allMatches.filter(m => m.coverage_percentage === 100).length,
-        almost_there: allMatches.filter(m => m.coverage_percentage >= 80 && m.coverage_percentage < 100).length,
-        needs_shopping: allMatches.filter(m => m.coverage_percentage < 80).length
+        fully_matched: allMatches.filter((m: any) => m.coverage_percentage === 100).length,
+        almost_there: allMatches.filter((m: any) => m.coverage_percentage >= 80 && m.coverage_percentage < 100).length,
+        needs_shopping: allMatches.filter((m: any) => m.coverage_percentage < 80).length
+    };
+}
+
+export interface GlobalSearchResult {
+    recipes: any[];
+    ingredients: any[];
+    categories: any[];
+}
+
+/**
+ * Global Search for all Food Genie objects
+ */
+export async function globalSearch(query: string, limit = 20): Promise<GlobalSearchResult> {
+    if (!query || query.length < 1) {
+        return { recipes: [], ingredients: [], categories: [] };
+    }
+
+    const [recipes, ingredients, categories] = await Promise.all([
+        db('recipes')
+            .where('is_deleted', false)
+            .where('privacy', 'public')
+            .where('title', 'LIKE', `%${query}%`)
+            .orderBy('is_gold_standard', 'desc')
+            .limit(limit),
+        db('ingredients')
+            .where('is_deleted', false)
+            .where('name', 'LIKE', `%${query}%`)
+            .limit(limit),
+        db('food_categories')
+            .where('is_deleted', false)
+            .where('name', 'LIKE', `%${query}%`)
+            .limit(limit)
+    ]);
+
+    return {
+        recipes: transformRecipeImages(recipes),
+        ingredients,
+        categories
     };
 }

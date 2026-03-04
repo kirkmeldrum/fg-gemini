@@ -14,6 +14,8 @@ export interface ShoppingItem {
     checked_at: string | null;
     created_at: string;
     updated_at: string;
+    category_name?: string;
+    category_slug?: string;
 }
 
 /**
@@ -21,15 +23,21 @@ export interface ShoppingItem {
  */
 export async function list(userId: number, householdId: number | null): Promise<ShoppingItem[]> {
     const query = db('shopping_list_items')
-        .where('is_checked', false); // Usually we only want unchecked items first
+        .leftJoin('ingredients', 'ingredients.id', 'shopping_list_items.ingredient_id')
+        .leftJoin('food_categories', 'food_categories.id', 'ingredients.category_id')
+        .select(
+            'shopping_list_items.*',
+            'food_categories.name as category_name',
+            'food_categories.slug as category_slug'
+        );
 
     if (householdId) {
-        query.where('household_id', householdId);
+        query.where('shopping_list_items.household_id', householdId);
     } else {
-        query.where('user_id', userId);
+        query.where('shopping_list_items.user_id', userId);
     }
 
-    return query.orderBy('created_at', 'desc');
+    return query.orderBy('food_categories.name', 'asc').orderBy('shopping_list_items.created_at', 'desc');
 }
 
 /**

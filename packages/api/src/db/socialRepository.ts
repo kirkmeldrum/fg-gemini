@@ -3,6 +3,10 @@
 // ============================================
 
 import { db } from '../config/database.js';
+import * as recipeRepo from './recipeRepository.js';
+import * as mealPlanRepo from './mealPlanRepository.js';
+import * as inventoryRepo from './inventoryRepository.js';
+import * as userRepo from './userRepository.js';
 
 export interface FriendConnection {
     id: number;
@@ -16,7 +20,7 @@ export interface FriendConnection {
 export interface ActivityItem {
     id: number;
     user_id: number;
-    action: 'posted_recipe' | 'rated_recipe' | 'cooked_meal' | 'followed_user';
+    action: 'posted_recipe' | 'rated_recipe' | 'cooked_meal' | 'followed_user' | 'status_update';
     target_id: number | null;
     target_type: 'recipe' | 'user' | 'meal_plan' | null;
     payload: string | null;
@@ -74,6 +78,18 @@ export const socialRepository = {
         return db('friend_connections')
             .where({ user_id: friendId, friend_id: userId })
             .update({ status, updated_at: db.fn.now() });
+    },
+
+    /** Reject or remove a connection */
+    async deleteRequest(userId: number, friendId: number) {
+        return db('friend_connections')
+            .where(function () {
+                this.where('user_id', userId).where('friend_id', friendId)
+            })
+            .orWhere(function () {
+                this.where('user_id', friendId).where('friend_id', userId)
+            })
+            .del();
     },
 
     /** Get all accepted friends for a user */
@@ -134,5 +150,53 @@ export const socialRepository = {
                 'users.last_name',
                 'users.avatar_url'
             );
+    },
+
+    /** Get a friend's profile with recipes, meal plan and inventory (for test/review) */
+    async getFriendProfile(myUserId: number, friendId: number) {
+        // 1. Verify friendship (status = 'accepted')
+        const connection = await db('friend_connections')
+            .where(builder => {
+                builder.where({ user_id: myUserId, friend_id: friendId })
+                    .orWhere({ user_id: friendId, friend_id: myUserId })
+            })
+            .andWhere('status', 'accepted')
+            .first();
+
+        if (!connection) {
+            return null; // Not authorized to view or not a friend
+        }
+
+        // 2. Get friend basic info
+        const user = await userRepo.findById(friendId);
+        if (!user) return null;
+
+        // 3. Get friend's public recipes
+        const recipes = await recipeRepo.find({ userId: friendId, visibility: 'public', limit: 50 });
+
+        // 4. Get friend's meal plan (today + 7 days)
+        const today = new Date().toISOString().split('T')[0];
+        const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const mealPlan = await mealPlanRepo.getMealPlan(friendId, today, nextWeek);
+
+        // 5. Get friend's inventory (test purpose)
+        // Find friend's household if any
+        const friendUser = await db('users').where({ id: friendId }).first();
+        const inventory = await inventoryRepo.list(friendId, friendUser.household_id);
+
+        return {
+            user: {
+                id: user.id,
+                username: user.username,
+                first_name: user.firstName,
+                last_name: user.lastName,
+                avatar_url: user.avatarUrl,
+                bio: user.bio,
+                location: user.location
+            },
+            recipes: recipes.items,
+            mealPlan,
+            inventory
+        };
     }
 };

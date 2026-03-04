@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, PlusCircle, Trash2, Save, CookingPot, Utensils, Info } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, PlusCircle, Trash2, Save, CookingPot, Utensils, Info, Share2 } from 'lucide-react';
 import { Button, Card, Badge, Modal, Label, Input } from './components';
 import * as api from '../lib/api';
 
@@ -34,6 +34,7 @@ export default function MealPlanner() {
     const [currentWeekStart, setCurrentWeekStart] = useState(getMonday(new Date()));
     const [plan, setPlan] = useState<api.MealPlanItem[]>([]);
     const [recipes, setRecipes] = useState<api.Recipe[]>([]);
+    const [matchingRecipes, setMatchingRecipes] = useState<api.Recipe[]>([]);
     const [nutrition, setNutrition] = useState<api.NutritionSummary | null>(null);
     const [, setIsLoading] = useState(true);
 
@@ -50,6 +51,7 @@ export default function MealPlanner() {
     useEffect(() => {
         loadData();
         api.getRecipes({ limit: 100 }).then(res => setRecipes(res.items));
+        api.getMatchingRecipes().then(res => setMatchingRecipes(res));
     }, [currentWeekStart]);
 
     const loadData = async () => {
@@ -78,7 +80,7 @@ export default function MealPlanner() {
 
     const getRecipe = (id: number | null) => {
         if (!id) return null;
-        return recipes.find(r => r.id === id);
+        return recipes.find(r => r.id === id) || matchingRecipes.find(r => r.id === id);
     };
 
     const handleSlotClick = (date: Date, slot: SlotType) => {
@@ -144,6 +146,20 @@ export default function MealPlanner() {
             loadData();
         } catch (err) {
             console.error('Failed to toggle cooked status:', err);
+        }
+    };
+
+    const handleShare = async (item: api.MealPlanItem) => {
+        try {
+            const recipe = getRecipe(item.recipe_id);
+            const text = recipe
+                ? `I'm planning to cook ${recipe.title} for ${item.meal_type} on ${item.plan_date}!`
+                : `Added a custom meal: ${item.notes} to my menu for ${item.meal_type}!`;
+
+            await api.postStatusUpdate(text);
+            alert("Shared to your kitchen feed! 🚀");
+        } catch (err) {
+            console.error('Failed to share meal:', err);
         }
     };
 
@@ -274,15 +290,28 @@ export default function MealPlanner() {
                                                 </div>
                                             )}
 
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleCooked(item);
-                                                }}
-                                                className={`absolute top-2 right-2 p-1 rounded-full shadow-sm transition-colors ${item.is_cooked ? 'bg-emerald-500 text-white' : 'bg-white text-slate-300 opacity-0 group-hover:opacity-100'}`}
-                                            >
-                                                <Save size={14} />
-                                            </button>
+                                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleShare(item);
+                                                    }}
+                                                    className="p-1.5 bg-white text-slate-400 hover:text-emerald-500 rounded-full shadow-sm"
+                                                    title="Share to Feed"
+                                                >
+                                                    <Share2 size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleCooked(item);
+                                                    }}
+                                                    className={`p-1.5 rounded-full shadow-sm transition-colors ${item.is_cooked ? 'bg-emerald-500 text-white opacity-100' : 'bg-white text-slate-300'}`}
+                                                    title={item.is_cooked ? "Unmark as cooked" : "Mark as cooked"}
+                                                >
+                                                    <Save size={12} />
+                                                </button>
+                                            </div>
                                         </div>
                                     ) : (
                                         <div className="w-full h-full border-2 border-dashed border-slate-50 rounded-xl flex items-center justify-center text-slate-200 group-hover:text-emerald-300 group-hover:border-emerald-100 transition-all">
@@ -344,12 +373,25 @@ export default function MealPlanner() {
                                                     </div>
                                                 )}
                                             </div>
+                                            {item && (
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleShare(item);
+                                                        }}
+                                                        className="p-2 text-slate-400 hover:text-emerald-500"
+                                                    >
+                                                        <Share2 size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    )
+                                    );
                                 })}
                             </div>
                         </Card>
-                    )
+                    );
                 })}
             </div>
 
@@ -371,9 +413,18 @@ export default function MealPlanner() {
                             }}
                         >
                             <option value="">-- Custom Meal / Note --</option>
-                            {recipes.map(r => (
-                                <option key={r.id} value={r.id}>{r.title}</option>
-                            ))}
+                            {matchingRecipes.length > 0 && (
+                                <optgroup label="✨ Recommended (Matches Your Kitchen)">
+                                    {matchingRecipes.map(r => (
+                                        <option key={r.id} value={r.id}>🍳 {r.title}</option>
+                                    ))}
+                                </optgroup>
+                            )}
+                            <optgroup label="All Recipes">
+                                {recipes.filter(r => !matchingRecipes.some(mr => mr.id === r.id)).map(r => (
+                                    <option key={r.id} value={r.id}>{r.title}</option>
+                                ))}
+                            </optgroup>
                         </select>
                     </div>
 

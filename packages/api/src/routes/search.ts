@@ -45,4 +45,18 @@ router.get('/stats', requireAuth, async (req, res) => {
     }
 });
 
+/**
+ * Global Search (REQ-006)
+ */
+router.get('/', requireAuth, async (req, res) => {
+    try {
+        const query = req.query.q as string;
+        const results = await searchRepo.globalSearch(query);
+        res.json({ success: true, data: results });
+    } catch (err) {
+        console.error('Global search error:', err);
+        res.status(500).json({ error: 'Failed to perform global search' });
+    }
+});
+
 export default router;

@@ -1,4 +1,5 @@
 import { db } from '../config/database.js';
+import { transformRecipeImages } from '../utils/imageUtils.js';
 
 export interface InventoryItem {
     id: number;
@@ -115,7 +116,7 @@ export async function getMatchingRecipes(userId: number, householdId: number | n
         .havingRaw('COUNT(owned.ingredient_id) > 0') // At least one ingredient owned
         .orderByRaw('COUNT(owned.ingredient_id) * 100.0 / COUNT(recipe_ingredients.id) DESC'); // Sort by match percentage
 
-    return recipes;
+    return transformRecipeImages(recipes);
 }
 
 /**

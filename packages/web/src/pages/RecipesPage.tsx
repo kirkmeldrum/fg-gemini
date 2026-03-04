@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Clock, Users, Search, SlidersHorizontal, Plus, Zap } from 'lucide-react';
+import { Clock, Users, Search, SlidersHorizontal, Plus, Zap, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, Button, Badge, Checkbox, RangeInput, Input } from './components';
 import { getRecipes, Recipe } from '../lib/api';
 
@@ -20,16 +20,25 @@ export default function Recipes({ onNavigate }: RecipesProps) {
     const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
     const [selectedDiets, setSelectedDiets] = useState<string[]>([]);
     const [maxTime, setMaxTime] = useState(60);
+    const [isGoldStandardOnly, setIsGoldStandardOnly] = useState(false);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalResults, setTotalResults] = useState(0);
+    const pageSize = 24;
 
     const fetchRecipes = async () => {
         setLoading(true);
         try {
-            const results = await getRecipes({
+            const response = await getRecipes({
                 query: searchQuery,
                 cuisine: selectedCuisines.length === 1 ? selectedCuisines[0] : undefined,
-                limit: 24,
+                limit: pageSize,
+                offset: (currentPage - 1) * pageSize,
+                is_gold_standard: isGoldStandardOnly ? true : undefined
             });
-            setRecipes(results.items);
+            setRecipes(response.items);
+            setTotalResults(response.total);
         } catch (err) {
             console.error('Failed to fetch recipes:', err);
         } finally {
@@ -44,10 +53,16 @@ export default function Recipes({ onNavigate }: RecipesProps) {
     // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
+            setCurrentPage(1); // Reset to page 1 on filter change
             fetchRecipes();
         }, 400);
         return () => clearTimeout(timer);
-    }, [searchQuery, selectedCuisines, selectedDiets, maxTime]);
+    }, [searchQuery, selectedCuisines, selectedDiets, maxTime, isGoldStandardOnly]);
+
+    // Handle page change
+    useEffect(() => {
+        if (currentPage > 1) fetchRecipes();
+    }, [currentPage]);
 
     const handleRecipeClick = (recipe: Recipe) => {
         if (onNavigate) {
@@ -95,6 +110,17 @@ export default function Recipes({ onNavigate }: RecipesProps) {
                                 onChange={() => toggleFilter(selectedDiets, setSelectedDiets, d)}
                             />
                         ))}
+                    </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-6">
+                    <h3 className="font-bold text-slate-800 mb-3 text-sm uppercase tracking-wide">Data Quality</h3>
+                    <div className="space-y-2">
+                        <Checkbox
+                            label="Gold Standard Only"
+                            checked={isGoldStandardOnly}
+                            onChange={(checked: boolean) => setIsGoldStandardOnly(checked)}
+                        />
                     </div>
                 </div>
 
@@ -172,36 +198,68 @@ export default function Recipes({ onNavigate }: RecipesProps) {
                         <p className="text-slate-500">Try adjusting your filters or search terms.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {recipes.map((recipe: Recipe) => (
-                            <Card key={recipe.id} className="group hover:border-emerald-200 transition-colors cursor-pointer flex flex-col" onClick={() => handleRecipeClick(recipe)}>
-                                <div className="aspect-video w-full overflow-hidden bg-slate-100 relative">
-                                    <img
-                                        src={recipe.image_url || '/placeholder-recipe.jpg'}
-                                        alt={recipe.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                    {recipe.cuisine && (
-                                        <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-white uppercase tracking-wider">
-                                            {recipe.cuisine}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="p-5 flex-1 flex flex-col">
-                                    <h3 className="text-lg font-bold text-slate-800 mb-2 leading-tight">{recipe.title}</h3>
-
-                                    <p className="text-sm text-slate-500 line-clamp-2 mb-4">
-                                        {recipe.description || "No description available."}
-                                    </p>
-
-                                    <div className="flex items-center gap-4 text-xs text-slate-500 mt-auto pt-2 border-t border-slate-100">
-                                        <div className="flex items-center gap-1"><Clock size={14} /> {recipe.prep_time + recipe.cook_time}m</div>
-                                        <div className="flex items-center gap-1"><Users size={14} /> {recipe.servings}</div>
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {recipes.map((recipe: Recipe) => (
+                                <Card key={recipe.id} className="group hover:border-emerald-200 transition-colors cursor-pointer flex flex-col" onClick={() => handleRecipeClick(recipe)}>
+                                    <div className="aspect-video w-full overflow-hidden bg-slate-100 relative">
+                                        <img
+                                            src={recipe.image_url || '/placeholder-recipe.jpg'}
+                                            alt={recipe.title}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                        {recipe.cuisine && (
+                                            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-white uppercase tracking-wider">
+                                                {recipe.cuisine}
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
+                                    <div className="p-5 flex-1 flex flex-col">
+                                        <h3 className="text-lg font-bold text-slate-800 mb-2 leading-tight flex items-center gap-2">
+                                            {recipe.title}
+                                            {recipe.is_gold_standard && (
+                                                <Star size={16} className="text-amber-400 fill-amber-400" />
+                                            )}
+                                        </h3>
+
+                                        <p className="text-sm text-slate-500 line-clamp-2 mb-4">
+                                            {recipe.description || "No description available."}
+                                        </p>
+
+                                        <div className="flex items-center gap-4 text-xs text-slate-500 mt-auto pt-2 border-t border-slate-100">
+                                            <div className="flex items-center gap-1"><Clock size={14} /> {recipe.prep_time + recipe.cook_time}m</div>
+                                            <div className="flex items-center gap-1"><Users size={14} /> {recipe.servings}</div>
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+
+                        {/* Pagination UI */}
+                        {totalResults > pageSize && (
+                            <div className="flex justify-center items-center gap-4 py-8 border-t border-slate-100">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                >
+                                    <ChevronLeft size={18} /> Previous
+                                </Button>
+                                <span className="text-sm font-medium text-slate-500">
+                                    Page <span className="text-slate-900 font-bold">{currentPage}</span> of {Math.ceil(totalResults / pageSize)}
+                                </span>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    disabled={currentPage >= Math.ceil(totalResults / pageSize)}
+                                    onClick={() => setCurrentPage(p => p + 1)}
+                                >
+                                    Next <ChevronRight size={18} />
+                                </Button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

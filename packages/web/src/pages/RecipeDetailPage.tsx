@@ -84,8 +84,13 @@ export default function RecipeDetail({ slug, onBack }: RecipeDetailProps) {
                 </div>
 
                 <div className="md:w-2/3 flex flex-col justify-end">
-                    <div className="flex justify-between items-start mb-4">
-                        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight">{recipe.title}</h1>
+                    <div className="flex justify-between items-start mb-2">
+                        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight flex items-center gap-3">
+                            {recipe.title}
+                            {recipe.is_gold_standard && (
+                                <Star size={24} className="text-amber-400 fill-amber-400 drop-shadow-sm" />
+                            )}
+                        </h1>
                         <div className="flex gap-2">
                             <button className="p-2 text-slate-400 hover:text-red-500 transition-colors bg-white rounded-full shadow-sm border border-slate-100">
                                 <Heart size={20} />
@@ -95,6 +100,13 @@ export default function RecipeDetail({ slug, onBack }: RecipeDetailProps) {
                             </button>
                         </div>
                     </div>
+
+                    {recipe.is_gold_standard && (
+                        <div className="flex items-center gap-1.5 text-amber-600 font-bold text-[10px] uppercase tracking-widest bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 mb-4 w-fit">
+                            <Star size={12} className="fill-amber-500" />
+                            Verified Scientific Data
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-3 mb-6">
                         <div className="flex">
@@ -185,9 +197,35 @@ export default function RecipeDetail({ slug, onBack }: RecipeDetailProps) {
                                         </div>
 
                                         <div className="flex-1">
-                                            <p className={`text-sm font-medium transition-all ${isChecked ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
-                                                {ing.quantity} {ing.unit} {ing.name_display}
-                                            </p>
+                                            <div className={`text-sm font-medium transition-all flex flex-wrap items-baseline gap-1 ${isChecked ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                                <span className="font-bold text-slate-900 mr-1">
+                                                    {ing.quantity} {ing.unit}
+                                                </span>
+
+                                                {ing.ingredient_name ? (
+                                                    <>
+                                                        {ing.brand_name && (
+                                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-red-100 text-red-800 border border-red-200 shadow-sm uppercase tracking-tighter">
+                                                                {ing.brand_name}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-emerald-800 font-semibold">
+                                                            {ing.ingredient_name}
+                                                        </span>
+                                                        {ing.ingredient_type && (
+                                                            <span className="text-[13px] italic text-emerald-700 opacity-90 font-normal">
+                                                                {ing.ingredient_type}
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-slate-600">
+                                                        {ing.name_display.startsWith(String(ing.quantity))
+                                                            ? ing.name_display.substring(String(ing.quantity).length).trim()
+                                                            : ing.name_display}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )

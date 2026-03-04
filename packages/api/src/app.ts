@@ -52,6 +52,10 @@ export function createApp(): Application {
     app.use(passport.initialize());
     app.use(passport.session());
 
+    // ---- Static Assets (Local Dev Photos) ----
+    const LOCAL_PHOTOS_PATH = 'C:\\Users\\kirkm\\OneDrive\\FOODGENIE\\Data\\RecipeIndexingScripts\\images';
+    app.use('/api/images/local', express.static(LOCAL_PHOTOS_PATH));
+
     // ---- Routes ----
     app.use('/api', apiRoutes);
 

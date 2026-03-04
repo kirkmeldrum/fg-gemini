@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import {
     Users, UserPlus, Heart, MessageCircle, Share2,
-    MoreHorizontal, ChefHat, Search, Bell, Check, X, User as UserIcon
+    MoreHorizontal, ChefHat, Search, Bell, Check, X, User as UserIcon, Archive
 } from 'lucide-react';
 import {
     Card, Button, Badge,
@@ -22,6 +22,13 @@ export default function SocialNetwork() {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<api.ApiUser[]>([]);
     const [sentRequests, setSentRequests] = useState<number[]>([]);
+    const [postContent, setPostContent] = useState("");
+    const [isPosting, setIsPosting] = useState(false);
+
+    // Profile Modal State
+    const [selectedProfile, setSelectedProfile] = useState<api.FriendProfile | null>(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [profileTab, setProfileTab] = useState<'recipes' | 'mealplan' | 'inventory'>('recipes');
 
     useEffect(() => {
         loadSocialData();
@@ -88,6 +95,40 @@ export default function SocialNetwork() {
         }
     };
 
+    const handleRejectRequest = async (friendId: number) => {
+        try {
+            await api.rejectFriendRequest(friendId);
+            loadSocialData();
+        } catch (error) {
+            console.error('Failed to reject request:', error);
+        }
+    };
+
+    const handlePostStatus = async () => {
+        if (!postContent.trim()) return;
+        setIsPosting(true);
+        try {
+            await api.postStatusUpdate(postContent);
+            setPostContent("");
+            loadSocialData();
+        } catch (error) {
+            console.error('Failed to post status:', error);
+        } finally {
+            setIsPosting(false);
+        }
+    };
+
+    const handleViewProfile = async (friendId: number) => {
+        try {
+            const profile = await api.getFriendProfile(friendId);
+            setSelectedProfile(profile);
+            setIsProfileOpen(true);
+            setProfileTab('recipes');
+        } catch (error) {
+            console.error('Failed to view profile:', error);
+        }
+    };
+
     const mapActionToText = (activity: api.Activity) => {
         const name = `${activity.first_name || activity.username}`;
         switch (activity.action) {
@@ -99,6 +140,8 @@ export default function SocialNetwork() {
                 return <span><strong>{name}</strong> cooked a delicious meal</span>;
             case 'followed_user':
                 return <span><strong>{name}</strong> started following someone</span>;
+            case 'status_update':
+                return <span>{activity.payload ? JSON.parse(activity.payload).text : 'shared a thought'}</span>;
             default:
                 return <span><strong>{name}</strong> did something interesting</span>;
         }
@@ -156,6 +199,8 @@ export default function SocialNetwork() {
                                 <textarea
                                     placeholder="Share your latest culinary triumph..."
                                     className="w-full bg-slate-50/50 border-0 focus:ring-0 rounded-xl p-4 text-slate-800 placeholder:text-slate-400 min-h-[100px] resize-none text-sm transition-all shadow-inner"
+                                    value={postContent}
+                                    onChange={(e) => setPostContent(e.target.value)}
                                 />
                                 <div className="mt-2 flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
                                     <div className="flex gap-2">
@@ -166,7 +211,14 @@ export default function SocialNetwork() {
                                             <Share2 size={18} />
                                         </button>
                                     </div>
-                                    <Button className="px-6 rounded-full text-sm font-semibold">Post</Button>
+                                    <Button
+                                        className="px-6 rounded-full text-sm font-semibold"
+                                        onClick={handlePostStatus}
+                                        isLoading={isPosting}
+                                        disabled={!postContent.trim() || isPosting}
+                                    >
+                                        Post
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -203,7 +255,10 @@ export default function SocialNetwork() {
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-900 hover:text-emerald-700 transition-colors cursor-pointer">
+                                                    <p
+                                                        className="font-bold text-slate-900 hover:text-emerald-700 transition-colors cursor-pointer"
+                                                        onClick={() => handleViewProfile(activity.user_id)}
+                                                    >
                                                         {activity.first_name || activity.username}
                                                     </p>
                                                     <div className="flex items-center gap-2 text-xs text-slate-400">
@@ -293,7 +348,10 @@ export default function SocialNetwork() {
                                             >
                                                 <Check size={16} />
                                             </button>
-                                            <button className="p-1.5 bg-slate-100 text-slate-400 rounded-lg hover:bg-white hover:text-red-500 transition-all">
+                                            <button
+                                                className="p-1.5 bg-slate-100 text-slate-400 rounded-lg hover:bg-white hover:text-red-500 transition-all"
+                                                onClick={() => handleRejectRequest(req.id)}
+                                            >
                                                 <X size={16} />
                                             </button>
                                         </div>
@@ -330,7 +388,10 @@ export default function SocialNetwork() {
                                             </div>
                                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
+                                        <div
+                                            className="flex-1 min-w-0"
+                                            onClick={() => handleViewProfile(friend.id)}
+                                        >
                                             <p className="text-sm font-bold text-slate-900 group-hover/item:text-emerald-700 transition-colors">
                                                 {friend.first_name || friend.username}
                                             </p>
@@ -451,6 +512,161 @@ export default function SocialNetwork() {
                         <div className="p-6 bg-slate-50 flex gap-4">
                             <Button variant="outline" className="flex-1 rounded-2xl" onClick={() => setIsInviteOpen(false)}>Cancel</Button>
                             <Button className="flex-1 rounded-2xl shadow-lg shadow-emerald-100">Invite via Email</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Profile Modal */}
+            {isProfileOpen && selectedProfile && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-white/20 flex flex-col">
+                        {/* Header */}
+                        <div className="p-8 bg-gradient-to-br from-emerald-600 to-teal-800 text-white relative">
+                            <button
+                                className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all backdrop-blur-sm"
+                                onClick={() => setIsProfileOpen(false)}
+                            >
+                                <X size={20} />
+                            </button>
+                            <div className="flex items-center gap-6">
+                                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/20 shadow-xl bg-white/10 backdrop-blur-md">
+                                    {selectedProfile.user.avatar_url ? (
+                                        <img src={selectedProfile.user.avatar_url} alt={selectedProfile.user.username} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-4xl font-bold">
+                                            {selectedProfile.user.username[0].toUpperCase()}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <h2 className="text-3xl font-extrabold tracking-tight">{selectedProfile.user.first_name} {selectedProfile.user.last_name}</h2>
+                                    <p className="text-emerald-100 font-medium opacity-80">@{selectedProfile.user.username}</p>
+                                    <div className="flex gap-4 mt-4">
+                                        <div className="bg-white/10 px-4 py-1.5 rounded-full backdrop-blur-sm text-xs font-bold uppercase tracking-widest border border-white/10">
+                                            {selectedProfile.recipes.length} Recipes
+                                        </div>
+                                        {selectedProfile.user.location && (
+                                            <div className="bg-white/10 px-4 py-1.5 rounded-full backdrop-blur-sm text-xs font-bold uppercase tracking-widest border border-white/10">
+                                                📍 {selectedProfile.user.location}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex bg-slate-50 border-b border-slate-100 p-2">
+                            {[
+                                { id: 'recipes', icon: ChefHat, label: 'Recipes' },
+                                { id: 'mealplan', icon: Bell, label: 'Menu' },
+                                { id: 'inventory', icon: Archive, label: 'Kitchen (Test)' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setProfileTab(tab.id as any)}
+                                    className={`flex-1 py-3 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm transition-all ${profileTab === tab.id
+                                        ? 'bg-white text-emerald-700 shadow-md shadow-slate-200/50'
+                                        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                >
+                                    <tab.icon size={18} />
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30">
+                            {profileTab === 'recipes' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {selectedProfile.recipes.length > 0 ? (
+                                        selectedProfile.recipes.map(recipe => (
+                                            <Card key={recipe.id} className="p-0 overflow-hidden group hover:shadow-xl transition-all border-slate-100 cursor-pointer">
+                                                <div className="h-32 bg-slate-200 relative overflow-hidden">
+                                                    {recipe.image_url ? (
+                                                        <img src={recipe.image_url} alt={recipe.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                                            <ChefHat size={32} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="p-4">
+                                                    <h3 className="font-bold text-slate-800 line-clamp-1">{recipe.title}</h3>
+                                                    <div className="flex items-center gap-3 mt-1 text-[10px] font-black text-slate-400 uppercase">
+                                                        <span>{recipe.prep_time + recipe.cook_time} MIN</span>
+                                                        <span>•</span>
+                                                        <span>{recipe.cuisine || 'International'}</span>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full py-12 text-center text-slate-400 italic">No public recipes shared yet.</div>
+                                    )}
+                                </div>
+                            )}
+
+                            {profileTab === 'mealplan' && (
+                                <div className="space-y-3">
+                                    {selectedProfile.mealPlan.length > 0 ? (
+                                        selectedProfile.mealPlan.map(item => (
+                                            <div key={item.id} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs uppercase">
+                                                        {item.meal_type[0]}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-800">
+                                                            {item.recipe_id ? selectedProfile.recipes.find(r => r.id === item.recipe_id)?.title : 'Custom Meal'}
+                                                        </p>
+                                                        <p className="text-xs text-slate-400 font-medium">{new Date(item.plan_date).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                                                    </div>
+                                                </div>
+                                                {item.is_cooked && <Badge className="bg-emerald-100 text-emerald-700">Cooked</Badge>}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="py-12 text-center text-slate-400 italic">No plans on the menu this week.</div>
+                                    )}
+                                </div>
+                            )}
+
+                            {profileTab === 'inventory' && (
+                                <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm">
+                                    <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Digital Kitchen Contents</h4>
+                                        <Badge color="slate" className="text-[10px]">{selectedProfile.inventory.length} Items</Badge>
+                                    </div>
+                                    <div className="divide-y divide-slate-50 max-h-[400px] overflow-y-auto">
+                                        {selectedProfile.inventory.length > 0 ? (
+                                            selectedProfile.inventory.map(item => (
+                                                <div key={item.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-glow shadow-emerald-200"></div>
+                                                        <p className="text-sm font-bold text-slate-700">{item.ingredient_name || item.product_name}</p>
+                                                    </div>
+                                                    <p className="text-xs font-black text-slate-400 uppercase">
+                                                        {item.quantity} {item.unit}
+                                                    </p>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="p-12 text-center text-slate-400 italic text-sm">Kitchen is currently empty.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-6 bg-white border-t border-slate-100 flex gap-4">
+                            <Button className="flex-1 rounded-2xl h-12 bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100 shadow-xl">
+                                Message Chef
+                            </Button>
+                            <Button variant="outline" className="rounded-2xl h-12 px-8" onClick={() => setIsProfileOpen(false)}>
+                                Done
+                            </Button>
                         </div>
                     </div>
                 </div>

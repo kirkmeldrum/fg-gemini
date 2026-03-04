@@ -256,7 +256,7 @@ export interface SocialActivity {
     username: string;
     displayName?: string | null;
     avatarUrl: string | null;
-    action: 'posted_recipe' | 'rated_recipe' | 'cooked_meal' | 'followed_user';
+    action: 'posted_recipe' | 'rated_recipe' | 'cooked_meal' | 'followed_user' | 'status_update';
     targetId: number | null;
     targetType: 'recipe' | 'user' | 'meal_plan' | null;
     payload: string | null;

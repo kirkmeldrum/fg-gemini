@@ -99,6 +99,63 @@ router.patch('/request/:friendId/accept', async (req: Request, res: Response, ne
 });
 
 /** 
+ * @route DELETE /api/social/request/:friendId
+ * @desc Reject a pending request or unfriend/unfollow a user
+ */
+router.delete('/request/:friendId', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req.user as any).id;
+        const friendId = parseInt(req.params.friendId as string);
+
+        await socialRepository.deleteRequest(userId, friendId);
+        res.json({ success: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** 
+ * @route POST /api/social/post
+ * @desc Create a social status update/post
+ */
+router.post('/post', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req.user as any).id;
+        const { content } = req.body;
+
+        if (!content || content.trim().length === 0) {
+            throw new AppError(400, 'BAD_REQUEST', 'Post content cannot be empty');
+        }
+
+        const id = await socialRepository.logActivity(userId, 'status_update', undefined, undefined, { text: content });
+        res.status(201).json({ success: true, data: { id } });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** 
+ * @route GET /api/social/profile/:friendId
+ * @desc Get a friend's profile with recipes, meal plan and inventory
+ */
+router.get('/profile/:friendId', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = (req.user as any).id;
+        const friendId = parseInt(req.params.friendId as string);
+
+        const profile = await socialRepository.getFriendProfile(userId, friendId);
+
+        if (!profile) {
+            throw new AppError(403, 'FORBIDDEN', 'Access denied or friend not found');
+        }
+
+        res.json({ success: true, data: profile });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** 
  * @route GET /api/social/feed
  * @desc Get the social activity feed for the user and their friends
  */
